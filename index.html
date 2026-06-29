@@ -1,0 +1,1547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Mission Control — Live Agent Activity Pipeline</title>
+<style>
+  /* ============================================================
+     MISSION CONTROL — LIVE AGENT ACTIVITY PIPELINE
+     All inline. No external assets. Pure CSS + JS.
+     ============================================================ */
+
+  :root {
+    --bg-0: #05070d;
+    --bg-1: #0a0f1c;
+    --bg-2: #0f1626;
+    --grid: rgba(0, 255, 209, 0.06);
+    --grid-strong: rgba(0, 255, 209, 0.12);
+    --neon-cyan: #00ffd1;
+    --neon-blue: #4dd2ff;
+    --neon-purple: #b16cff;
+    --neon-pink: #ff5fb8;
+    --neon-amber: #ffc857;
+    --neon-green: #5dff8f;
+    --neon-red: #ff5c7a;
+    --text-0: #e6f6ff;
+    --text-1: #98a8c2;
+    --text-2: #5d6c87;
+    --line: rgba(77, 210, 255, 0.18);
+    --line-strong: rgba(0, 255, 209, 0.45);
+    --shadow-cyan: 0 0 18px rgba(0, 255, 209, 0.55), 0 0 36px rgba(0, 255, 209, 0.18);
+    --shadow-blue: 0 0 18px rgba(77, 210, 255, 0.55), 0 0 36px rgba(77, 210, 255, 0.18);
+    --shadow-green: 0 0 18px rgba(93, 255, 143, 0.55), 0 0 36px rgba(93, 255, 143, 0.18);
+    --shadow-purple: 0 0 18px rgba(177, 108, 255, 0.55), 0 0 36px rgba(177, 108, 255, 0.18);
+    --shadow-amber: 0 0 18px rgba(255, 200, 87, 0.55), 0 0 36px rgba(255, 200, 87, 0.18);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    height: 100%;
+    font-family: 'Segoe UI', 'SF Pro Display', system-ui, -apple-system, sans-serif;
+    color: var(--text-0);
+    background: var(--bg-0);
+    overflow-x: hidden;
+  }
+
+  body {
+    background:
+      radial-gradient(ellipse 1200px 600px at 50% -10%, rgba(77, 210, 255, 0.12), transparent 60%),
+      radial-gradient(ellipse 800px 400px at 100% 100%, rgba(177, 108, 255, 0.10), transparent 60%),
+      radial-gradient(ellipse 800px 400px at 0% 100%, rgba(0, 255, 209, 0.08), transparent 60%),
+      linear-gradient(180deg, var(--bg-0), var(--bg-1) 40%, var(--bg-0));
+    min-height: 100vh;
+    padding: 20px;
+    position: relative;
+  }
+
+  /* Animated grid background */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background-image:
+      linear-gradient(var(--grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    background-size: 40px 40px;
+    mask-image: radial-gradient(ellipse 100% 70% at 50% 30%, #000 30%, transparent 90%);
+    -webkit-mask-image: radial-gradient(ellipse 100% 70% at 50% 30%, #000 30%, transparent 90%);
+    animation: gridShift 18s linear infinite;
+    z-index: 0;
+  }
+
+  body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background:
+      repeating-linear-gradient(0deg, rgba(0,0,0,0) 0, rgba(0,0,0,0) 3px, rgba(0,0,0,0.06) 3px, rgba(0,0,0,0.06) 4px);
+    z-index: 100;
+    mix-blend-mode: overlay;
+    opacity: 0.4;
+  }
+
+  @keyframes gridShift {
+    from { background-position: 0 0, 0 0; }
+    to   { background-position: 40px 40px, 40px 40px; }
+  }
+
+  .stage {
+    max-width: 1600px;
+    margin: 0 auto;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* ============================================================
+     TOP METRIC BAR
+     ============================================================ */
+  .topbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 20px;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background:
+      linear-gradient(180deg, rgba(15, 22, 38, 0.85), rgba(10, 15, 28, 0.85)),
+      rgba(10, 15, 28, 0.4);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.02), 0 8px 30px rgba(0,0,0,0.5);
+    margin-bottom: 18px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .topbar::before {
+    content: "";
+    position: absolute;
+    top: 0; left: -100%;
+    width: 60%;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--neon-cyan), transparent);
+    animation: topScan 5s linear infinite;
+  }
+
+  @keyframes topScan {
+    0% { left: -60%; }
+    100% { left: 110%; }
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .brand-logo {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    border: 1.5px solid var(--neon-cyan);
+    display: grid;
+    place-items: center;
+    box-shadow: var(--shadow-cyan);
+    background: radial-gradient(circle, rgba(0,255,209,0.18), transparent 70%);
+    position: relative;
+  }
+
+  .brand-logo::before, .brand-logo::after {
+    content: "";
+    position: absolute;
+    border-radius: 50%;
+    border: 1px solid var(--neon-cyan);
+    opacity: 0.4;
+    animation: pulseRing 2.4s ease-out infinite;
+  }
+  .brand-logo::before { inset: -6px; animation-delay: 0s; }
+  .brand-logo::after  { inset: -12px; animation-delay: 1.2s; }
+
+  @keyframes pulseRing {
+    0%   { transform: scale(0.9); opacity: 0.6; }
+    100% { transform: scale(1.6); opacity: 0; }
+  }
+
+  .brand-logo svg { width: 18px; height: 18px; }
+
+  .brand-text { line-height: 1.1; }
+  .brand-text .t1 {
+    font-size: 11px;
+    letter-spacing: 0.3em;
+    color: var(--neon-cyan);
+    text-transform: uppercase;
+  }
+  .brand-text .t2 {
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+  }
+
+  .metrics {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .metric {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 8px 14px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: rgba(15, 22, 38, 0.5);
+    min-width: 110px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .metric::before {
+    content: "";
+    position: absolute;
+    top: 0; left: -30%;
+    width: 30%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(0,255,209,0.06), transparent);
+    animation: metricShine 4s ease-in-out infinite;
+  }
+
+  @keyframes metricShine {
+    0%   { left: -30%; }
+    100% { left: 130%; }
+  }
+
+  .metric-label {
+    font-size: 9px;
+    letter-spacing: 0.25em;
+    color: var(--text-2);
+    text-transform: uppercase;
+  }
+
+  .metric-value {
+    font-family: 'Courier New', monospace;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--neon-cyan);
+    text-shadow: 0 0 8px rgba(0, 255, 209, 0.5);
+    line-height: 1;
+  }
+
+  .metric .pulse {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--neon-green);
+    margin-right: 6px;
+    vertical-align: middle;
+    box-shadow: 0 0 8px var(--neon-green);
+    animation: blink 1.6s ease-in-out infinite;
+  }
+
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50%      { opacity: 0.3; }
+  }
+
+  .system-mood {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: rgba(15, 22, 38, 0.5);
+    font-size: 13px;
+  }
+
+  .mood-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--neon-amber);
+    box-shadow: 0 0 10px var(--neon-amber);
+    animation: blink 1.2s ease-in-out infinite;
+  }
+
+  /* ============================================================
+     PIPELINE LAYOUT
+     ============================================================ */
+  .pipeline {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 14px;
+    position: relative;
+  }
+
+  .station {
+    position: relative;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    background:
+      linear-gradient(180deg, rgba(15, 22, 38, 0.85), rgba(8, 12, 22, 0.85));
+    padding: 16px 14px 14px;
+    min-height: 320px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    transition: border-color 0.4s, box-shadow 0.4s;
+  }
+
+  .station::before {
+    /* scan line */
+    content: "";
+    position: absolute;
+    left: 0; right: 0; top: -50%;
+    height: 50%;
+    background: linear-gradient(180deg, rgba(0,255,209,0.05), transparent);
+    animation: scanDown 4s linear infinite;
+    pointer-events: none;
+  }
+
+  @keyframes scanDown {
+    0%   { top: -50%; }
+    100% { top: 110%; }
+  }
+
+  .station .station-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    position: relative;
+    z-index: 2;
+  }
+
+  .station-num {
+    width: 26px;
+    height: 26px;
+    border-radius: 8px;
+    display: grid;
+    place-items: center;
+    font-family: 'Courier New', monospace;
+    font-weight: 700;
+    font-size: 13px;
+    border: 1px solid var(--line-strong);
+    color: var(--text-0);
+  }
+
+  .station-title {
+    flex: 1;
+    text-align: center;
+    font-size: 11px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--text-1);
+  }
+
+  .station-state-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--text-2);
+    box-shadow: 0 0 6px var(--text-2);
+    transition: all 0.3s;
+  }
+
+  /* IDLE */
+  .station.state-idle { border-color: var(--line); }
+  .station.state-idle .station-state-dot { background: var(--text-2); box-shadow: 0 0 6px var(--text-2); }
+  .station.state-idle .station-num { color: var(--text-1); }
+
+  /* WORKING */
+  .station.state-working {
+    border-color: var(--neon-cyan);
+    box-shadow: 0 0 0 1px rgba(0,255,209,0.15), inset 0 0 30px rgba(0,255,209,0.05);
+    animation: workGlow 2.4s ease-in-out infinite;
+  }
+  .station.state-working .station-state-dot {
+    background: var(--neon-cyan);
+    box-shadow: 0 0 12px var(--neon-cyan), 0 0 24px var(--neon-cyan);
+    animation: blink 0.8s ease-in-out infinite;
+  }
+  .station.state-working .station-num {
+    color: var(--neon-cyan);
+    text-shadow: 0 0 8px var(--neon-cyan);
+    border-color: var(--neon-cyan);
+  }
+
+  @keyframes workGlow {
+    0%, 100% { box-shadow: 0 0 0 1px rgba(0,255,209,0.18), inset 0 0 30px rgba(0,255,209,0.05); }
+    50%      { box-shadow: 0 0 0 2px rgba(0,255,209,0.35), inset 0 0 50px rgba(0,255,209,0.12); }
+  }
+
+  /* COMPLETE */
+  .station.state-complete {
+    border-color: var(--neon-green);
+    box-shadow: 0 0 0 1px rgba(93,255,143,0.25), inset 0 0 30px rgba(93,255,143,0.08);
+  }
+  .station.state-complete .station-state-dot {
+    background: var(--neon-green);
+    box-shadow: 0 0 14px var(--neon-green);
+  }
+  .station.state-complete .station-num {
+    color: var(--neon-green);
+    border-color: var(--neon-green);
+    text-shadow: 0 0 8px var(--neon-green);
+  }
+
+  /* Station-specific accent colors */
+  .station[data-color="cyan"]   { --accent: var(--neon-cyan);   --accent-shadow: var(--shadow-cyan); }
+  .station[data-color="purple"] { --accent: var(--neon-purple); --accent-shadow: var(--shadow-purple); }
+  .station[data-color="amber"]  { --accent: var(--neon-amber);  --accent-shadow: var(--shadow-amber); }
+  .station[data-color="blue"]   { --accent: var(--neon-blue);   --accent-shadow: var(--shadow-blue); }
+  .station[data-color="pink"]   { --accent: var(--neon-pink);   --accent-shadow: 0 0 18px rgba(255,95,184,0.55); }
+
+  /* Breathing idle effect */
+  .station.state-idle .station-num {
+    animation: breathe 3s ease-in-out infinite;
+  }
+  @keyframes breathe {
+    0%, 100% { opacity: 0.6; }
+    50%      { opacity: 1; }
+  }
+
+  /* ============================================================
+     STATION SCENE
+     ============================================================ */
+  .scene {
+    flex: 1;
+    position: relative;
+    border: 1px solid rgba(77, 210, 255, 0.10);
+    border-radius: 12px;
+    background:
+      linear-gradient(180deg, rgba(0,0,0,0.25), rgba(0,0,0,0.05)),
+      radial-gradient(ellipse at center bottom, rgba(77, 210, 255, 0.06), transparent 70%);
+    overflow: hidden;
+    margin-bottom: 10px;
+    min-height: 200px;
+  }
+
+  .scene-floor {
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    height: 30%;
+    background:
+      linear-gradient(180deg, transparent, rgba(0,255,209,0.04)),
+      repeating-linear-gradient(90deg, rgba(77, 210, 255, 0.18) 0 1px, transparent 1px 12px);
+    border-top: 1px solid rgba(0, 255, 209, 0.12);
+    transform: perspective(120px) rotateX(40deg);
+    transform-origin: bottom;
+    opacity: 0.5;
+  }
+
+  /* SVG characters and station props */
+  .scene svg.char, .scene svg.desk {
+    position: absolute;
+    bottom: 14%;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 3;
+  }
+
+  .scene .status-text {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    right: 8px;
+    font-family: 'Courier New', monospace;
+    font-size: 9px;
+    color: var(--text-2);
+    letter-spacing: 0.1em;
+    z-index: 5;
+    display: flex;
+    justify-content: space-between;
+    text-transform: uppercase;
+  }
+
+  .scene .status-text .v { color: var(--accent); }
+
+  /* particles layer */
+  .particles {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 4;
+  }
+
+  .particle {
+    position: absolute;
+    border-radius: 50%;
+    pointer-events: none;
+    will-change: transform, opacity;
+  }
+
+  /* Typing dots */
+  .typing-dots {
+    position: absolute;
+    top: 28px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 4px;
+    z-index: 6;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .station.state-working .typing-dots { opacity: 1; }
+  .typing-dots span {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 6px var(--accent);
+    animation: typingBounce 1.2s ease-in-out infinite;
+  }
+  .typing-dots span:nth-child(2) { animation-delay: 0.15s; }
+  .typing-dots span:nth-child(3) { animation-delay: 0.30s; }
+
+  @keyframes typingBounce {
+    0%, 80%, 100% { transform: translateY(0); opacity: 0.5; }
+    40% { transform: translateY(-5px); opacity: 1; }
+  }
+
+  /* ============================================================
+     STATION FOOTER
+     ============================================================ */
+  .station-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    color: var(--text-1);
+    text-transform: uppercase;
+    position: relative;
+    z-index: 2;
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 8px;
+    border-radius: 6px;
+    border: 1px solid var(--line);
+    font-family: 'Courier New', monospace;
+    font-size: 9px;
+    color: var(--text-1);
+    background: rgba(15, 22, 38, 0.5);
+  }
+
+  .badge.idle    { color: var(--text-2); }
+  .badge.work    { color: var(--accent); border-color: var(--accent); box-shadow: 0 0 8px rgba(0,255,209,0.3); }
+  .badge.done    { color: var(--neon-green); border-color: var(--neon-green); }
+
+  /* progress bar */
+  .progress {
+    flex: 1;
+    height: 4px;
+    border-radius: 4px;
+    background: rgba(77, 210, 255, 0.08);
+    overflow: hidden;
+    position: relative;
+  }
+  .progress-fill {
+    position: absolute;
+    inset: 0;
+    width: 0%;
+    background: linear-gradient(90deg, var(--accent), var(--neon-cyan));
+    box-shadow: 0 0 8px var(--accent);
+    transition: width 0.5s ease;
+    border-radius: 4px;
+  }
+  .station.state-complete .progress-fill {
+    width: 100% !important;
+    background: var(--neon-green);
+  }
+
+  /* ============================================================
+     CONNECTORS (arrows between stations)
+     ============================================================ */
+  .connectors {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Connector is rendered via SVG overlay positioned absolutely on the pipeline */
+  .pipeline-wrap {
+    position: relative;
+  }
+
+  .pipeline-svg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  .pipeline-svg .conn-line {
+    stroke: var(--line);
+    stroke-width: 2;
+    stroke-dasharray: 4 6;
+    fill: none;
+  }
+
+  .pipeline-svg .travel-dot {
+    fill: var(--neon-cyan);
+    filter: drop-shadow(0 0 4px var(--neon-cyan));
+  }
+
+  /* ============================================================
+     EVENT LOG
+     ============================================================ */
+  .event-log {
+    margin-top: 18px;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: rgba(10, 15, 28, 0.6);
+    padding: 14px 16px;
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+  }
+
+  .event-log h3 {
+    font-size: 11px;
+    letter-spacing: 0.3em;
+    color: var(--neon-cyan);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .event-log h3 .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--neon-cyan);
+    box-shadow: 0 0 8px var(--neon-cyan);
+    animation: blink 1.2s ease-in-out infinite;
+  }
+
+  .event-list {
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+    max-height: 140px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .event-row {
+    display: grid;
+    grid-template-columns: 70px 90px 1fr;
+    gap: 10px;
+    padding: 4px 8px;
+    border-left: 2px solid var(--neon-cyan);
+    background: linear-gradient(90deg, rgba(0,255,209,0.04), transparent);
+    color: var(--text-1);
+    animation: rowIn 0.4s ease;
+    opacity: 0.95;
+  }
+
+  .event-row .time { color: var(--text-2); }
+  .event-row .where { color: var(--neon-cyan); font-weight: 700; }
+  .event-row .msg { color: var(--text-0); }
+
+  @keyframes rowIn {
+    from { opacity: 0; transform: translateX(-8px); }
+    to   { opacity: 0.95; transform: translateX(0); }
+  }
+
+  /* ============================================================
+     RESPONSIVE
+     ============================================================ */
+  @media (max-width: 1100px) {
+    .pipeline { grid-template-columns: repeat(3, 1fr); }
+    .station:nth-child(4), .station:nth-child(5) {
+      grid-column: span 1;
+    }
+  }
+
+  @media (max-width: 720px) {
+    body { padding: 10px; }
+    .topbar { flex-direction: column; align-items: flex-start; }
+    .metrics { width: 100%; }
+    .metric { flex: 1; min-width: 90px; }
+    .pipeline { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  @media (max-width: 480px) {
+    .pipeline { grid-template-columns: 1fr; }
+  }
+
+  /* prefers-reduced-motion */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+    }
+    .station.state-working {
+      box-shadow: 0 0 0 1px rgba(0,255,209,0.25), inset 0 0 20px rgba(0,255,209,0.06);
+    }
+  }
+</style>
+</head>
+<body>
+
+<div class="stage">
+
+  <!-- ======================== TOP METRIC BAR ======================== -->
+  <div class="topbar" role="banner" aria-label="Mission Control Status">
+    <div class="brand">
+      <div class="brand-logo" aria-hidden="true">
+        <!-- radar/eye icon -->
+        <svg viewBox="0 0 24 24" fill="none">
+          <circle cx="12" cy="12" r="9" stroke="#00ffd1" stroke-width="1.4"/>
+          <circle cx="12" cy="12" r="5" stroke="#00ffd1" stroke-width="1.2"/>
+          <circle cx="12" cy="12" r="1.6" fill="#00ffd1"/>
+          <path d="M12 3 L13.5 11 L12 12" stroke="#00ffd1" stroke-width="1.2" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="brand-text">
+        <div class="t1">// Hermes Mission Control</div>
+        <div class="t2">LIVE AGENT PIPELINE</div>
+      </div>
+    </div>
+
+    <div class="metrics" role="status" aria-live="polite">
+      <div class="metric">
+        <div class="metric-label"><span class="pulse"></span>Tasks Today</div>
+        <div class="metric-value" id="m-tasks">142</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Active</div>
+        <div class="metric-value" id="m-active">5</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Avg Latency</div>
+        <div class="metric-value" id="m-latency">1.20s</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Throughput</div>
+        <div class="metric-value" id="m-throughput">98%</div>
+      </div>
+    </div>
+
+    <div class="system-mood" aria-live="polite">
+      <span class="mood-dot" id="mood-dot"></span>
+      <span>System Mood:</span>
+      <strong id="m-mood" style="color: var(--neon-amber); margin-left: 4px;">Focused</strong>
+    </div>
+  </div>
+
+  <!-- ======================== PIPELINE ======================== -->
+  <div class="pipeline-wrap">
+    <svg class="pipeline-svg" id="pipeline-svg" aria-hidden="true"></svg>
+
+    <div class="pipeline" id="pipeline">
+
+      <!-- ===== STATION 1: INCOMING REQUEST ===== -->
+      <div class="station state-idle" data-color="cyan" data-id="incoming">
+        <div class="station-header">
+          <div class="station-num">01</div>
+          <div class="station-title">Incoming Request</div>
+          <div class="station-state-dot"></div>
+        </div>
+        <div class="scene" data-scene="incoming">
+          <div class="status-text">
+            <span>SOURCE</span><span class="v" data-role="src">— waiting —</span>
+          </div>
+          <div class="typing-dots"><span></span><span></span><span></span></div>
+          <div class="particles" data-particles></div>
+
+          <!-- Request envelope SVG -->
+          <svg class="char" viewBox="0 0 120 120" width="110" height="110" aria-hidden="true">
+            <!-- ambient glow ring -->
+            <defs>
+              <radialGradient id="g1" cx="50%" cy="60%" r="50%">
+                <stop offset="0%" stop-color="#00ffd1" stop-opacity="0.6"/>
+                <stop offset="100%" stop-color="#00ffd1" stop-opacity="0"/>
+              </radialGradient>
+            </defs>
+            <circle cx="60" cy="70" r="46" fill="url(#g1)" class="char-aura"/>
+            <!-- envelope -->
+            <g class="env" transform="translate(60 65)">
+              <rect x="-30" y="-18" width="60" height="38" rx="3"
+                    fill="#0f1626" stroke="#00ffd1" stroke-width="1.6"/>
+              <path d="M-30 -18 L0 5 L30 -18" stroke="#00ffd1" stroke-width="1.6" fill="none"/>
+              <!-- paper sticking out -->
+              <rect x="-22" y="-25" width="44" height="20" rx="1.5"
+                    fill="#1a2238" stroke="#4dd2ff" stroke-width="1"/>
+              <line x1="-16" y1="-19" x2="14" y2="-19" stroke="#4dd2ff" stroke-width="0.8" opacity="0.7"/>
+              <line x1="-16" y1="-15" x2="10" y2="-15" stroke="#4dd2ff" stroke-width="0.8" opacity="0.5"/>
+              <line x1="-16" y1="-11" x2="12" y2="-11" stroke="#4dd2ff" stroke-width="0.8" opacity="0.4"/>
+            </g>
+            <!-- notification ping -->
+            <circle cx="82" cy="42" r="6" fill="#ff5c7a" opacity="0">
+              <animate attributeName="r" values="4;10;4" dur="1.6s" repeatCount="indefinite"/>
+              <animate attributeName="opacity" values="1;0;1" dur="1.6s" repeatCount="indefinite"/>
+            </circle>
+          </svg>
+
+          <div class="scene-floor"></div>
+        </div>
+        <div class="station-footer">
+          <span class="badge idle" data-badge>IDLE</span>
+          <div class="progress"><div class="progress-fill" data-progress></div></div>
+          <span data-count style="font-family: 'Courier New', monospace; color: var(--text-2);">0</span>
+        </div>
+      </div>
+
+      <!-- ===== STATION 2: CEO DISPATCH ===== -->
+      <div class="station state-idle" data-color="purple" data-id="ceo">
+        <div class="station-header">
+          <div class="station-num">02</div>
+          <div class="station-title">CEO Dispatch</div>
+          <div class="station-state-dot"></div>
+        </div>
+        <div class="scene" data-scene="ceo">
+          <div class="status-text">
+            <span>DISPATCH</span><span class="v" data-role="src">— standby —</span>
+          </div>
+          <div class="typing-dots"><span></span><span></span><span></span></div>
+          <div class="particles" data-particles></div>
+
+          <!-- CEO at desk -->
+          <svg class="char" viewBox="0 0 120 120" width="120" height="120" aria-hidden="true">
+            <defs>
+              <radialGradient id="g2" cx="50%" cy="50%" r="50%">
+                <stop offset="0%" stop-color="#b16cff" stop-opacity="0.55"/>
+                <stop offset="100%" stop-color="#b16cff" stop-opacity="0"/>
+              </radialGradient>
+            </defs>
+            <circle cx="60" cy="55" r="42" fill="url(#g2)" class="char-aura"/>
+
+            <!-- desk -->
+            <rect x="10" y="78" width="100" height="6" rx="1.5" fill="#1a2238" stroke="#b16cff" stroke-width="0.8"/>
+
+            <!-- chair back -->
+            <rect x="50" y="40" width="20" height="34" rx="3" fill="#0f1626" stroke="#b16cff" stroke-width="1.2"/>
+
+            <!-- CEO body / suit -->
+            <g class="ceo-body">
+              <path d="M40 80 Q60 60 80 80 L80 96 L40 96 Z" fill="#1a2238" stroke="#b16cff" stroke-width="1.2"/>
+              <!-- tie -->
+              <path d="M58 64 L62 64 L63 78 L57 78 Z" fill="#ff5fb8"/>
+              <!-- head -->
+              <circle cx="60" cy="48" r="11" fill="#2a1f3a" stroke="#b16cff" stroke-width="1.2"/>
+              <!-- hair -->
+              <path d="M49 46 Q60 36 71 46" fill="none" stroke="#b16cff" stroke-width="1.4"/>
+              <!-- glasses -->
+              <circle cx="56" cy="49" r="2.5" fill="none" stroke="#00ffd1" stroke-width="1"/>
+              <circle cx="64" cy="49" r="2.5" fill="none" stroke="#00ffd1" stroke-width="1"/>
+              <line x1="58.5" y1="49" x2="61.5" y2="49" stroke="#00ffd1" stroke-width="0.8"/>
+              <!-- mouth -->
+              <path d="M56 54 Q60 56 64 54" stroke="#b16cff" stroke-width="1" fill="none"/>
+            </g>
+
+            <!-- arm pointing (assigning) -->
+            <g class="ceo-arm" transform-origin="40 70">
+              <path d="M40 70 L24 60" stroke="#2a1f3a" stroke-width="4" stroke-linecap="round"/>
+              <circle cx="24" cy="60" r="3" fill="#2a1f3a"/>
+            </g>
+
+            <!-- monitor -->
+            <rect x="76" y="58" width="28" height="20" rx="1.5" fill="#0a0f1c" stroke="#b16cff" stroke-width="1"/>
+            <rect x="78" y="60" width="24" height="16" fill="none" stroke="#00ffd1" stroke-width="0.6">
+              <animate attributeName="opacity" values="0.4;1;0.4" dur="1.8s" repeatCount="indefinite"/>
+            </rect>
+            <line x1="80" y1="64" x2="100" y2="64" stroke="#00ffd1" stroke-width="0.6"/>
+            <line x1="80" y1="68" x2="96" y2="68" stroke="#00ffd1" stroke-width="0.6"/>
+            <line x1="80" y1="72" x2="98" y2="72" stroke="#00ffd1" stroke-width="0.6"/>
+            <!-- stand -->
+            <rect x="88" y="78" width="4" height="3" fill="#b16cff"/>
+          </svg>
+
+          <div class="scene-floor"></div>
+        </div>
+        <div class="station-footer">
+          <span class="badge idle" data-badge>IDLE</span>
+          <div class="progress"><div class="progress-fill" data-progress></div></div>
+          <span data-count style="font-family: 'Courier New', monospace; color: var(--text-2);">0</span>
+        </div>
+      </div>
+
+      <!-- ===== STATION 3: WORKER / DELEGATE ===== -->
+      <div class="station state-idle" data-color="amber" data-id="worker">
+        <div class="station-header">
+          <div class="station-num">03</div>
+          <div class="station-title">Worker / Delegate</div>
+          <div class="station-state-dot"></div>
+        </div>
+        <div class="scene" data-scene="worker">
+          <div class="status-text">
+            <span>PROGRESS</span><span class="v" data-role="src">— waiting —</span>
+          </div>
+          <div class="typing-dots"><span></span><span></span><span></span></div>
+          <div class="particles" data-particles></div>
+
+          <!-- Worker with gears -->
+          <svg class="char" viewBox="0 0 120 120" width="120" height="120" aria-hidden="true">
+            <defs>
+              <radialGradient id="g3" cx="50%" cy="55%" r="50%">
+                <stop offset="0%" stop-color="#ffc857" stop-opacity="0.5"/>
+                <stop offset="100%" stop-color="#ffc857" stop-opacity="0"/>
+              </radialGradient>
+            </defs>
+            <circle cx="60" cy="55" r="42" fill="url(#g3)" class="char-aura"/>
+
+            <!-- big gear -->
+            <g class="big-gear" transform="translate(35 60)">
+              <g>
+                <circle cx="0" cy="0" r="14" fill="#0f1626" stroke="#ffc857" stroke-width="1.2"/>
+                <circle cx="0" cy="0" r="5" fill="#1a2238" stroke="#ffc857" stroke-width="1"/>
+                <!-- teeth -->
+                <g fill="#ffc857">
+                  <rect x="-2" y="-18" width="4" height="4"/>
+                  <rect x="-2" y="14" width="4" height="4"/>
+                  <rect x="-18" y="-2" width="4" height="4"/>
+                  <rect x="14" y="-2" width="4" height="4"/>
+                  <rect x="-15" y="-15" width="4" height="4" transform="rotate(45)"/>
+                  <rect x="-15" y="-15" width="4" height="4" transform="rotate(-45)"/>
+                  <rect x="11" y="-15" width="4" height="4" transform="rotate(-45)"/>
+                  <rect x="11" y="11" width="4" height="4" transform="rotate(45)"/>
+                </g>
+                <animateTransform attributeName="transform" type="rotate"
+                                  from="0" to="360" dur="6s" repeatCount="indefinite"/>
+              </g>
+            </g>
+
+            <!-- small gear -->
+            <g class="small-gear" transform="translate(82 80)">
+              <circle cx="0" cy="0" r="9" fill="#0f1626" stroke="#ffc857" stroke-width="1"/>
+              <circle cx="0" cy="0" r="3" fill="#1a2238" stroke="#ffc857" stroke-width="0.8"/>
+              <g fill="#ffc857">
+                <rect x="-1.5" y="-12" width="3" height="3"/>
+                <rect x="-1.5" y="9" width="3" height="3"/>
+                <rect x="-12" y="-1.5" width="3" height="3"/>
+                <rect x="9" y="-1.5" width="3" height="3"/>
+              </g>
+              <animateTransform attributeName="transform" type="rotate"
+                                from="360" to="0" dur="4s" repeatCount="indefinite"/>
+            </g>
+
+            <!-- worker head -->
+            <g class="worker-head">
+              <circle cx="60" cy="42" r="12" fill="#2a1f1a" stroke="#ffc857" stroke-width="1.2"/>
+              <!-- hardhat -->
+              <path d="M48 40 Q60 24 72 40 L72 36 Q60 28 48 36 Z" fill="#ffc857" stroke="#ff5c7a" stroke-width="0.8"/>
+              <rect x="46" y="38" width="28" height="3" fill="#ff5c7a"/>
+              <!-- face -->
+              <circle cx="56" cy="43" r="1.4" fill="#00ffd1"/>
+              <circle cx="64" cy="43" r="1.4" fill="#00ffd1"/>
+              <path d="M55 49 Q60 52 65 49" stroke="#ffc857" stroke-width="1" fill="none"/>
+            </g>
+            <!-- body -->
+            <path d="M44 88 Q60 70 76 88 L76 100 L44 100 Z" fill="#1a2238" stroke="#ffc857" stroke-width="1.2"/>
+            <!-- arms typing -->
+            <g class="worker-arms">
+              <path d="M44 78 L34 88" stroke="#2a1f1a" stroke-width="4" stroke-linecap="round"/>
+              <path d="M76 78 L86 88" stroke="#2a1f1a" stroke-width="4" stroke-linecap="round"/>
+            </g>
+
+            <!-- data stream -->
+            <g class="data-stream" opacity="0.8">
+              <text x="8" y="30" fill="#ffc857" font-size="6" font-family="monospace">
+                <tspan x="8" y="30">10110</tspan>
+                <animate attributeName="opacity" values="0;1;0" dur="1.6s" repeatCount="indefinite"/>
+              </text>
+              <text x="8" y="42" fill="#00ffd1" font-size="6" font-family="monospace">
+                <tspan x="8" y="42">01001</tspan>
+                <animate attributeName="opacity" values="0;1;0" dur="2.2s" begin="0.4s" repeatCount="indefinite"/>
+              </text>
+              <text x="8" y="54" fill="#b16cff" font-size="6" font-family="monospace">
+                <tspan x="8" y="54">11010</tspan>
+                <animate attributeName="opacity" values="0;1;0" dur="1.8s" begin="0.8s" repeatCount="indefinite"/>
+              </text>
+            </g>
+          </svg>
+
+          <div class="scene-floor"></div>
+        </div>
+        <div class="station-footer">
+          <span class="badge idle" data-badge>IDLE</span>
+          <div class="progress"><div class="progress-fill" data-progress></div></div>
+          <span data-count style="font-family: 'Courier New', monospace; color: var(--text-2);">0</span>
+        </div>
+      </div>
+
+      <!-- ===== STATION 4: OPS VERIFIES ===== -->
+      <div class="station state-idle" data-color="blue" data-id="ops">
+        <div class="station-header">
+          <div class="station-num">04</div>
+          <div class="station-title">Ops Verifies</div>
+          <div class="station-state-dot"></div>
+        </div>
+        <div class="scene" data-scene="ops">
+          <div class="status-text">
+            <span>CHECKLIST</span><span class="v" data-role="src">— pending —</span>
+          </div>
+          <div class="typing-dots"><span></span><span></span><span></span></div>
+          <div class="particles" data-particles></div>
+
+          <!-- Ops with clipboard -->
+          <svg class="char" viewBox="0 0 120 120" width="120" height="120" aria-hidden="true">
+            <defs>
+              <radialGradient id="g4" cx="50%" cy="55%" r="50%">
+                <stop offset="0%" stop-color="#4dd2ff" stop-opacity="0.55"/>
+                <stop offset="100%" stop-color="#4dd2ff" stop-opacity="0"/>
+              </radialGradient>
+            </defs>
+            <circle cx="60" cy="55" r="42" fill="url(#g4)" class="char-aura"/>
+
+            <!-- clipboard -->
+            <g transform="translate(60 65) rotate(-8)">
+              <rect x="-22" y="-32" width="44" height="58" rx="3" fill="#0f1626" stroke="#4dd2ff" stroke-width="1.2"/>
+              <rect x="-10" y="-36" width="20" height="8" rx="1.5" fill="#4dd2ff"/>
+              <!-- checklist lines -->
+              <g class="checklist">
+                <rect x="-16" y="-22" width="6" height="6" fill="none" stroke="#4dd2ff" stroke-width="1"/>
+                <path d="M-15 -19 L-13 -17 L-10 -22" stroke="#5dff8f" stroke-width="1.4" fill="none" stroke-linecap="round">
+                  <animate attributeName="stroke-dasharray" values="0,10;10,0" dur="2s" begin="0s" repeatCount="indefinite"/>
+                </path>
+                <line x1="-6" y1="-19" x2="14" y2="-19" stroke="#4dd2ff" stroke-width="0.8"/>
+
+                <rect x="-16" y="-12" width="6" height="6" fill="none" stroke="#4dd2ff" stroke-width="1"/>
+                <path d="M-15 -9 L-13 -7 L-10 -12" stroke="#5dff8f" stroke-width="1.4" fill="none" stroke-linecap="round">
+                  <animate attributeName="stroke-dasharray" values="0,10;10,0" dur="2s" begin="0.5s" repeatCount="indefinite"/>
+                </path>
+                <line x1="-6" y1="-9" x2="12" y2="-9" stroke="#4dd2ff" stroke-width="0.8"/>
+
+                <rect x="-16" y="-2" width="6" height="6" fill="none" stroke="#4dd2ff" stroke-width="1"/>
+                <path d="M-15 1 L-13 3 L-10 -2" stroke="#5dff8f" stroke-width="1.4" fill="none" stroke-linecap="round">
+                  <animate attributeName="stroke-dasharray" values="0,10;10,0" dur="2s" begin="1s" repeatCount="indefinite"/>
+                </path>
+                <line x1="-6" y1="1" x2="14" y2="1" stroke="#4dd2ff" stroke-width="0.8"/>
+
+                <rect x="-16" y="8" width="6" height="6" fill="none" stroke="#4dd2ff" stroke-width="1"/>
+                <path d="M-15 11 L-13 13 L-10 8" stroke="#5dff8f" stroke-width="1.4" fill="none" stroke-linecap="round">
+                  <animate attributeName="stroke-dasharray" values="0,10;10,0" dur="2s" begin="1.5s" repeatCount="indefinite"/>
+                </path>
+                <line x1="-6" y1="11" x2="10" y2="11" stroke="#4dd2ff" stroke-width="0.8"/>
+              </g>
+            </g>
+
+            <!-- ops person -->
+            <g class="ops-head">
+              <circle cx="60" cy="38" r="11" fill="#1a2a3a" stroke="#4dd2ff" stroke-width="1.2"/>
+              <!-- headset -->
+              <path d="M50 36 Q60 26 70 36" fill="none" stroke="#4dd2ff" stroke-width="1.6"/>
+              <rect x="48" y="34" width="4" height="6" rx="1" fill="#4dd2ff"/>
+              <rect x="68" y="34" width="4" height="6" rx="1" fill="#4dd2ff"/>
+              <!-- eyes -->
+              <circle cx="56" cy="39" r="1.4" fill="#00ffd1"/>
+              <circle cx="64" cy="39" r="1.4" fill="#00ffd1"/>
+              <!-- mouth -->
+              <path d="M56 44 Q60 46 64 44" stroke="#4dd2ff" stroke-width="1" fill="none"/>
+            </g>
+            <path d="M44 60 Q60 52 76 60 L76 70 L44 70 Z" fill="#1a2238" stroke="#4dd2ff" stroke-width="1.2"/>
+          </svg>
+
+          <div class="scene-floor"></div>
+        </div>
+        <div class="station-footer">
+          <span class="badge idle" data-badge>IDLE</span>
+          <div class="progress"><div class="progress-fill" data-progress></div></div>
+          <span data-count style="font-family: 'Courier New', monospace; color: var(--text-2);">0</span>
+        </div>
+      </div>
+
+      <!-- ===== STATION 5: GATEWAY REPORTS ===== -->
+      <div class="station state-idle" data-color="pink" data-id="gateway">
+        <div class="station-header">
+          <div class="station-num">05</div>
+          <div class="station-title">Gateway Reports</div>
+          <div class="station-state-dot"></div>
+        </div>
+        <div class="scene" data-scene="gateway">
+          <div class="status-text">
+            <span>EGRESS</span><span class="v" data-role="src">— closed —</span>
+          </div>
+          <div class="typing-dots"><span></span><span></span><span></span></div>
+          <div class="particles" data-particles></div>
+
+          <!-- Gateway with portal -->
+          <svg class="char" viewBox="0 0 120 120" width="120" height="120" aria-hidden="true">
+            <defs>
+              <radialGradient id="g5" cx="50%" cy="50%" r="55%">
+                <stop offset="0%" stop-color="#ff5fb8" stop-opacity="0.5"/>
+                <stop offset="100%" stop-color="#ff5fb8" stop-opacity="0"/>
+              </radialGradient>
+              <linearGradient id="portal" x1="0" x2="0" y1="0" y2="1">
+                <stop offset="0%" stop-color="#ff5fb8"/>
+                <stop offset="100%" stop-color="#4dd2ff"/>
+              </linearGradient>
+            </defs>
+            <circle cx="60" cy="55" r="44" fill="url(#g5)" class="char-aura"/>
+
+            <!-- portal rings -->
+            <g class="portal-rings">
+              <ellipse cx="60" cy="60" rx="32" ry="38" fill="none" stroke="#ff5fb8" stroke-width="1.4" opacity="0.7">
+                <animate attributeName="rx" values="32;36;32" dur="2.4s" repeatCount="indefinite"/>
+                <animate attributeName="ry" values="38;34;38" dur="2.4s" repeatCount="indefinite"/>
+              </ellipse>
+              <ellipse cx="60" cy="60" rx="26" ry="32" fill="none" stroke="#4dd2ff" stroke-width="1" opacity="0.6">
+                <animate attributeName="rx" values="26;30;26" dur="2.4s" begin="0.4s" repeatCount="indefinite"/>
+                <animate attributeName="ry" values="32;28;32" dur="2.4s" begin="0.4s" repeatCount="indefinite"/>
+              </ellipse>
+              <ellipse cx="60" cy="60" rx="20" ry="26" fill="url(#portal)" opacity="0.4"/>
+            </g>
+
+            <!-- central energy core -->
+            <circle cx="60" cy="60" r="8" fill="#0a0f1c" stroke="#00ffd1" stroke-width="1.4">
+              <animate attributeName="r" values="6;9;6" dur="1.6s" repeatCount="indefinite"/>
+            </circle>
+            <circle cx="60" cy="60" r="3" fill="#00ffd1">
+              <animate attributeName="opacity" values="0.4;1;0.4" dur="1s" repeatCount="indefinite"/>
+            </circle>
+
+            <!-- outgoing packets -->
+            <g class="packets">
+              <circle cx="20" cy="40" r="2" fill="#ff5fb8">
+                <animate attributeName="cx" values="20;100;100" dur="2.5s" repeatCount="indefinite"/>
+                <animate attributeName="opacity" values="0;1;0" dur="2.5s" repeatCount="indefinite"/>
+              </circle>
+              <circle cx="20" cy="60" r="2" fill="#4dd2ff">
+                <animate attributeName="cx" values="20;100;100" dur="2.5s" begin="0.7s" repeatCount="indefinite"/>
+                <animate attributeName="opacity" values="0;1;0" dur="2.5s" begin="0.7s" repeatCount="indefinite"/>
+              </circle>
+              <circle cx="20" cy="80" r="2" fill="#5dff8f">
+                <animate attributeName="cx" values="20;100;100" dur="2.5s" begin="1.4s" repeatCount="indefinite"/>
+                <animate attributeName="opacity" values="0;1;0" dur="2.5s" begin="1.4s" repeatCount="indefinite"/>
+              </circle>
+            </g>
+
+            <!-- stand -->
+            <rect x="56" y="92" width="8" height="6" fill="#1a2238" stroke="#ff5fb8" stroke-width="0.8"/>
+            <rect x="40" y="98" width="40" height="3" rx="1" fill="#1a2238" stroke="#ff5fb8" stroke-width="0.8"/>
+
+            <!-- status: complete check -->
+            <g class="complete-mark" opacity="0">
+              <circle cx="92" cy="30" r="9" fill="#5dff8f" stroke="#0a0f1c" stroke-width="1.5"/>
+              <path d="M88 30 L91 33 L96 27" stroke="#0a0f1c" stroke-width="2" fill="none" stroke-linecap="round"/>
+              <animate attributeName="opacity" values="0;0;0" dur="3s" repeatCount="indefinite"/>
+            </g>
+          </svg>
+
+          <div class="scene-floor"></div>
+        </div>
+        <div class="station-footer">
+          <span class="badge idle" data-badge>IDLE</span>
+          <div class="progress"><div class="progress-fill" data-progress></div></div>
+          <span data-count style="font-family: 'Courier New', monospace; color: var(--text-2);">0</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ======================== EVENT LOG ======================== -->
+  <div class="event-log" role="log" aria-live="polite" aria-label="Pipeline event log">
+    <h3><span class="dot"></span> Live Event Stream</h3>
+    <div class="event-list" id="event-list"></div>
+  </div>
+
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ============================================================
+     STATE
+     ============================================================ */
+  const STATIONS = ['incoming', 'ceo', 'worker', 'ops', 'gateway'];
+  const STATION_LABELS = {
+    incoming: 'INCOMING',
+    ceo:      'CEO',
+    worker:   'WORKER',
+    ops:      'OPS',
+    gateway:  'GATEWAY'
+  };
+
+  const state = {
+    tasksProcessed: 142,
+    activeTasks: 5,
+    avgLatency: 1.20,
+    throughput: 98,
+    mood: 'Focused',
+    activeTask: null,   // current task flowing through the pipeline
+    taskStage: 0,       // 0..4 = which station it just completed (0 means before station 1)
+    tasksCompleted: 0,
+    taskStartTime: 0
+  };
+
+  const MOODS = ['Focused', 'Busy', 'Calm', 'Energized', 'Processing'];
+  const MOOD_COLORS = {
+    Focused: '#ffc857',
+    Busy: '#ff5c7a',
+    Calm: '#4dd2ff',
+    Energized: '#5dff8f',
+    Processing: '#b16cff'
+  };
+
+  const SOURCES = [
+    'API-WEB', 'EMAIL-Q', 'SLACK-7', 'CRON-12', 'USER-A', 'WEBHOOK', 'TRIGGER-X', 'TICKET-99'
+  ];
+  const TASKS = [
+    'Summarize report',
+    'Translate doc',
+    'Patch security',
+    'Render preview',
+    'Sync CRM',
+    'Send digest',
+    'Audit logs',
+    'Process refund',
+    'Onboard user',
+    'Schedule task'
+  ];
+
+  /* ============================================================
+     METRICS UI
+     ============================================================ */
+  const $mTasks = document.getElementById('m-tasks');
+  const $mActive = document.getElementById('m-active');
+  const $mLatency = document.getElementById('m-latency');
+  const $mThroughput = document.getElementById('m-throughput');
+  const $mMood = document.getElementById('m-mood');
+  const $moodDot = document.getElementById('mood-dot');
+
+  function renderMetrics() {
+    $mTasks.textContent = state.tasksProcessed;
+    $mActive.textContent = state.activeTasks;
+    $mLatency.textContent = state.avgLatency.toFixed(2) + 's';
+    $mThroughput.textContent = state.throughput + '%';
+    $mMood.textContent = state.mood;
+    $mMood.style.color = MOOD_COLORS[state.mood];
+    $moodDot.style.background = MOOD_COLORS[state.mood];
+    $moodDot.style.boxShadow = `0 0 10px ${MOOD_COLORS[state.mood]}`;
+  }
+
+  /* ============================================================
+     PIPELINE SVG (connectors + traveling dots)
+     ============================================================ */
+  const pipelineEl = document.getElementById('pipeline');
+  const pipelineSvg = document.getElementById('pipeline-svg');
+
+  function buildConnectors() {
+    pipelineSvg.innerHTML = '';
+    const stationEls = Array.from(pipelineEl.querySelectorAll('.station'));
+    if (stationEls.length < 2) return;
+    const wrap = pipelineEl.getBoundingClientRect();
+    pipelineSvg.setAttribute('viewBox', `0 0 ${wrap.width} ${wrap.height}`);
+    pipelineSvg.setAttribute('preserveAspectRatio', 'none');
+
+    // connectors between adjacent stations (4 connectors for 5 stations)
+    for (let i = 0; i < stationEls.length - 1; i++) {
+      const a = stationEls[i].getBoundingClientRect();
+      const b = stationEls[i+1].getBoundingClientRect();
+      const ax = a.right - wrap.left;
+      const ay = a.top + a.height * 0.5 - wrap.top;
+      const bx = b.left - wrap.left;
+      const by = b.top + b.height * 0.5 - wrap.top;
+
+      // base dashed line
+      const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      line.setAttribute('x1', ax);
+      line.setAttribute('y1', ay);
+      line.setAttribute('x2', bx);
+      line.setAttribute('y2', by);
+      line.setAttribute('class', 'conn-line');
+      pipelineSvg.appendChild(line);
+
+      // arrowhead
+      const arrow = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+      const ang = Math.atan2(by - ay, bx - ax);
+      const tipX = bx - 4 * Math.cos(ang);
+      const tipY = by - 4 * Math.sin(ang);
+      const leftX = tipX - 9 * Math.cos(ang - 0.5);
+      const leftY = tipY - 9 * Math.sin(ang - 0.5);
+      const rightX = tipX - 9 * Math.cos(ang + 0.5);
+      const rightY = tipY - 9 * Math.sin(ang + 0.5);
+      arrow.setAttribute('points', `${tipX},${tipY} ${leftX},${leftY} ${rightX},${rightY}`);
+      arrow.setAttribute('fill', 'rgba(0,255,209,0.55)');
+      pipelineSvg.appendChild(arrow);
+
+      // traveling dots
+      for (let k = 0; k < 3; k++) {
+        const dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        dot.setAttribute('r', '2.5');
+        dot.setAttribute('class', 'travel-dot');
+        // animateMotion via SVG
+        const motion = document.createElementNS('http://www.w3.org/2000/svg', 'animateMotion');
+        motion.setAttribute('dur', (2.4 + k * 0.4) + 's');
+        motion.setAttribute('repeatCount', 'indefinite');
+        motion.setAttribute('begin', (k * 0.8) + 's');
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'mpath');
+        // create path for motion
+        const motionPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        motionPath.setAttribute('d', `M ${ax} ${ay} L ${bx} ${by}`);
+        motionPath.setAttribute('id', `mp-${i}-${k}`);
+        motionPath.setAttribute('fill', 'none');
+        motionPath.setAttribute('stroke', 'none');
+        pipelineSvg.appendChild(motionPath);
+        path.setAttribute('href', `#mp-${i}-${k}`);
+        motion.appendChild(path);
+        dot.appendChild(motion);
+        pipelineSvg.appendChild(dot);
+      }
+    }
+  }
+
+  let resizeTimer = null;
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(buildConnectors, 150);
+  });
+
+  /* ============================================================
+     STATION STATE UI
+     ============================================================ */
+  const stationEls = {};
+  STATIONS.forEach(id => {
+    stationEls[id] = pipelineEl.querySelector(`.station[data-id="${id}"]`);
+  });
+
+  function setStationState(id, st, fillProgress = null) {
+    const el = stationEls[id];
+    if (!el) return;
+    el.classList.remove('state-idle', 'state-working', 'state-complete');
+    el.classList.add('state-' + st);
+    const badge = el.querySelector('[data-badge]');
+    badge.classList.remove('idle', 'work', 'done');
+    if (st === 'idle')    { badge.classList.add('idle'); badge.textContent = 'IDLE'; }
+    if (st === 'working') { badge.classList.add('work');  badge.textContent = 'WORKING'; }
+    if (st === 'complete'){ badge.classList.add('done');  badge.textContent = 'COMPLETE'; }
+
+    const progress = el.querySelector('[data-progress]');
+    if (progress && fillProgress !== null) {
+      progress.style.width = Math.min(100, Math.max(0, fillProgress)) + '%';
+    }
+  }
+
+  function setStationStatus(id, role, text) {
+    const el = stationEls[id];
+    if (!el) return;
+    const r = el.querySelector(`[data-role="${role}"]`);
+    if (r) r.textContent = text;
+  }
+
+  function spawnParticles(id, color) {
+    const el = stationEls[id];
+    if (!el) return;
+    const layer = el.querySelector('[data-particles]');
+    if (!layer) return;
+    const W = layer.clientWidth || 200;
+    const H = layer.clientHeight || 200;
+    const count = 6;
+    for (let i = 0; i < count; i++) {
+      const p = document.createElement('div');
+      p.className = 'particle';
+      const size = 2 + Math.random() * 3;
+      const x = Math.random() * W;
+      const y = H - 6;
+      p.style.width = size + 'px';
+      p.style.height = size + 'px';
+      p.style.left = x + 'px';
+      p.style.top = y + 'px';
+      p.style.background = color;
+      p.style.boxShadow = `0 0 ${size * 2}px ${color}`;
+      const dur = 1.2 + Math.random() * 1.6;
+      const dx = (Math.random() - 0.5) * 30;
+      p.animate([
+        { transform: `translate(0, 0) scale(1)`, opacity: 0 },
+        { transform: `translate(${dx * 0.5}px, ${-H * 0.5}px) scale(1)`, opacity: 1, offset: 0.2 },
+        { transform: `translate(${dx}px, ${-H + 10}px) scale(0.4)`, opacity: 0 }
+      ], { duration: dur * 1000, easing: 'cubic-bezier(.2,.8,.4,1)' });
+      setTimeout(() => p.remove(), dur * 1000 + 50);
+      layer.appendChild(p);
+    }
+  }
+
+  /* ============================================================
+     EVENT LOG
+     ============================================================ */
+  const $eventList = document.getElementById('event-list');
+  function log(where, msg) {
+    const now = new Date();
+    const hh = String(now.getHours()).padStart(2, '0');
+    const mm = String(now.getMinutes()).padStart(2, '0');
+    const ss = String(now.getSeconds()).padStart(2, '0');
+    const row = document.createElement('div');
+    row.className = 'event-row';
+    row.innerHTML = `<span class="time">${hh}:${mm}:${ss}</span><span class="where">${where}</span><span class="msg">${msg}</span>`;
+    $eventList.insertBefore(row, $eventList.firstChild);
+    while ($eventList.children.length > 8) $eventList.removeChild($eventList.lastChild);
+  }
+
+  /* ============================================================
+     PIPELINE TASK FLOW
+     A task enters station 1, then progresses to 2, 3, 4, 5.
+     At each station it sits "working" for a moment, then "complete".
+     We track by index in STATIONS.
+     ============================================================ */
+  let currentTaskId = null;
+
+  function startNewTask() {
+    if (currentTaskId) return;
+    currentTaskId = 'T' + Math.floor(Math.random() * 9000 + 1000);
+    const taskName = TASKS[Math.floor(Math.random() * TASKS.length)];
+    const source = SOURCES[Math.floor(Math.random() * SOURCES.length)];
+    state.taskStage = 0;
+    state.tasksCompleted = 0;
+    state.taskStartTime = Date.now();
+
+    // reset all stations to idle
+    STATIONS.forEach(id => setStationState(id, 'idle', 0));
+
+    // configure incoming
+    setStationStatus('incoming', 'src', source + ' / ' + currentTaskId);
+    log('INCOMING', `${source} → task ${currentTaskId} (${taskName})`);
+
+    // begin station 1
+    processStation(0);
+  }
+
+  function processStation(idx) {
+    const id = STATIONS[idx];
+    const colors = {
+      incoming: '#00ffd1',
+      ceo:      '#b16cff',
+      worker:   '#ffc857',
+      ops:      '#4dd2ff',
+      gateway:  '#ff5fb8'
+    };
+
+    // mark current station working
+    setStationState(id, 'working', 5);
+    setStationStatus(id, 'src', `${currentTaskId} / processing`);
+    spawnParticles(id, colors[id]);
+    log(STATION_LABELS[id], `task ${currentTaskId} received`);
+
+    // animate progress over working duration
+    const dur = 900 + Math.random() * 900;  // ms
+    const start = Date.now();
+    const tick = setInterval(() => {
+      const t = Math.min(1, (Date.now() - start) / dur);
+      setStationState(id, 'working', 5 + t * 90);
+      if (t >= 1) {
+        clearInterval(tick);
+        completeStation(idx);
+      }
+    }, 60);
+  }
+
+  function completeStation(idx) {
+    const id = STATIONS[idx];
+    setStationState(id, 'complete', 100);
+    setStationStatus(id, 'src', `${currentTaskId} ✓ done`);
+    // increment counter
+    const countEl = stationEls[id].querySelector('[data-count]');
+    const cur = parseInt(countEl.textContent, 10) || 0;
+    countEl.textContent = cur + 1;
+    log(STATION_LABELS[id], `task ${currentTaskId} cleared ✓`);
+
+    // bump metrics
+    state.tasksProcessed += (id === 'gateway' ? 1 : 0);
+    state.avgLatency = Math.max(0.7, Math.min(2.4, state.avgLatency + (Math.random() - 0.5) * 0.1));
+    state.activeTasks = Math.max(2, Math.min(9, state.activeTasks + (Math.random() < 0.5 ? -1 : 1)));
+
+    // advance
+    state.taskStage = idx + 1;
+    if (idx + 1 < STATIONS.length) {
+      setTimeout(() => processStation(idx + 1), 350);
+    } else {
+      // pipeline done — reset all and start another
+      setTimeout(() => {
+        log('GATEWAY', `task ${currentTaskId} delivered. Pipeline reset.`);
+        currentTaskId = null;
+        state.tasksProcessed += 1;
+        renderMetrics();
+        // brief idle pause, then restart
+        STATIONS.forEach(s => setStationState(s, 'idle', 0));
+        setTimeout(startNewTask, 800 + Math.random() * 1200);
+      }, 600);
+    }
+  }
+
+  /* ============================================================
+     METRICS TICK (every 3 seconds)
+     ============================================================ */
+  function metricsTick() {
+    state.tasksProcessed += Math.floor(Math.random() * 3);
+    state.throughput = Math.max(85, Math.min(100, state.throughput + Math.floor((Math.random() - 0.4) * 3)));
+    if (Math.random() < 0.35) {
+      state.mood = MOODS[Math.floor(Math.random() * MOODS.length)];
+    }
+    state.avgLatency = Math.max(0.7, Math.min(2.4, state.avgLatency + (Math.random() - 0.5) * 0.15));
+    renderMetrics();
+  }
+
+  /* ============================================================
+     REDUCED MOTION
+     ============================================================ */
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ============================================================
+     INIT
+     ============================================================ */
+  function init() {
+    buildConnectors();
+    renderMetrics();
+
+    // pre-seed counters
+    Object.values(stationEls).forEach(el => {
+      const c = el.querySelector('[data-count]');
+      if (c) c.textContent = Math.floor(Math.random() * 6 + 2);
+    });
+
+    log('SYSTEM', 'Mission Control online — pipeline primed');
+
+    // kick off pipeline
+    startNewTask();
+
+    // metrics loop
+    setInterval(metricsTick, 3000);
+
+    // occasionally re-log ambient status
+    setInterval(() => {
+      const id = STATIONS[Math.floor(Math.random() * STATIONS.length)];
+      const msgs = [
+        'heartbeat nominal',
+        'queue steady',
+        'agents synced',
+        'channels healthy',
+        'latency within SLA'
+      ];
+      log(STATION_LABELS[id], msgs[Math.floor(Math.random() * msgs.length)]);
+    }, 5000);
+  }
+
+  // wait for fonts/layout
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+})();
+</script>
+
+</body>
+</html>
