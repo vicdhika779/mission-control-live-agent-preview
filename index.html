@@ -3,1538 +3,1389 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Mission Control — Live Agent Activity Pipeline</title>
+<title>Mission Control — Live Agent Activity</title>
 <style>
-  /* ============================================================
-     MISSION CONTROL — LIVE AGENT ACTIVITY PIPELINE
-     All inline. No external assets. Pure CSS + JS.
-     ============================================================ */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   :root {
-    --bg-0: #05070d;
-    --bg-1: #0a0f1c;
-    --bg-2: #0f1626;
-    --grid: rgba(0, 255, 209, 0.06);
-    --grid-strong: rgba(0, 255, 209, 0.12);
-    --neon-cyan: #00ffd1;
-    --neon-blue: #4dd2ff;
-    --neon-purple: #b16cff;
-    --neon-pink: #ff5fb8;
-    --neon-amber: #ffc857;
-    --neon-green: #5dff8f;
-    --neon-red: #ff5c7a;
-    --text-0: #e6f6ff;
-    --text-1: #98a8c2;
-    --text-2: #5d6c87;
-    --line: rgba(77, 210, 255, 0.18);
-    --line-strong: rgba(0, 255, 209, 0.45);
-    --shadow-cyan: 0 0 18px rgba(0, 255, 209, 0.55), 0 0 36px rgba(0, 255, 209, 0.18);
-    --shadow-blue: 0 0 18px rgba(77, 210, 255, 0.55), 0 0 36px rgba(77, 210, 255, 0.18);
-    --shadow-green: 0 0 18px rgba(93, 255, 143, 0.55), 0 0 36px rgba(93, 255, 143, 0.18);
-    --shadow-purple: 0 0 18px rgba(177, 108, 255, 0.55), 0 0 36px rgba(177, 108, 255, 0.18);
-    --shadow-amber: 0 0 18px rgba(255, 200, 87, 0.55), 0 0 36px rgba(255, 200, 87, 0.18);
+    --bg-deep: #02050d;
+    --bg-floor: #050a18;
+    --neon-green: #00ff88;
+    --neon-cyan: #00d9ff;
+    --neon-pink: #ff2e88;
+    --neon-amber: #ffcc00;
+    --neon-purple: #b266ff;
+    --text: #c8d8e8;
+    --text-dim: #5a7090;
+    --text-bright: #ffffff;
+    --alert-red: #ff3355;
+    --border: rgba(0, 217, 255, 0.2);
+    --border-strong: rgba(0, 217, 255, 0.4);
   }
 
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-
-  html, body {
-    height: 100%;
-    font-family: 'Segoe UI', 'SF Pro Display', system-ui, -apple-system, sans-serif;
-    color: var(--text-0);
-    background: var(--bg-0);
-    overflow-x: hidden;
-  }
-
+  html, body { height: 100%; width: 100%; overflow: hidden; }
   body {
-    background:
-      radial-gradient(ellipse 1200px 600px at 50% -10%, rgba(77, 210, 255, 0.12), transparent 60%),
-      radial-gradient(ellipse 800px 400px at 100% 100%, rgba(177, 108, 255, 0.10), transparent 60%),
-      radial-gradient(ellipse 800px 400px at 0% 100%, rgba(0, 255, 209, 0.08), transparent 60%),
-      linear-gradient(180deg, var(--bg-0), var(--bg-1) 40%, var(--bg-0));
-    min-height: 100vh;
-    padding: 20px;
+    background: var(--bg-deep);
+    color: var(--text);
+    font-family: 'SF Mono', 'Consolas', 'Monaco', 'Menlo', 'Courier New', monospace;
     position: relative;
+    overflow: hidden;
   }
 
-  /* Animated grid background */
   body::before {
-    content: "";
-    position: fixed;
-    inset: 0;
+    content: '';
+    position: fixed; inset: 0;
+    background:
+      radial-gradient(ellipse 60% 50% at 25% 20%, rgba(0, 80, 180, 0.18), transparent 60%),
+      radial-gradient(ellipse 50% 60% at 75% 80%, rgba(120, 0, 200, 0.12), transparent 60%),
+      radial-gradient(circle at center, var(--bg-floor), var(--bg-deep) 75%);
     pointer-events: none;
-    background-image:
-      linear-gradient(var(--grid) 1px, transparent 1px),
-      linear-gradient(90deg, var(--grid) 1px, transparent 1px);
-    background-size: 40px 40px;
-    mask-image: radial-gradient(ellipse 100% 70% at 50% 30%, #000 30%, transparent 90%);
-    -webkit-mask-image: radial-gradient(ellipse 100% 70% at 50% 30%, #000 30%, transparent 90%);
-    animation: gridShift 18s linear infinite;
     z-index: 0;
   }
 
-  body::after {
-    content: "";
-    position: fixed;
-    inset: 0;
-    pointer-events: none;
-    background:
-      repeating-linear-gradient(0deg, rgba(0,0,0,0) 0, rgba(0,0,0,0) 3px, rgba(0,0,0,0.06) 3px, rgba(0,0,0,0.06) 4px);
-    z-index: 100;
-    mix-blend-mode: overlay;
-    opacity: 0.4;
-  }
-
-  @keyframes gridShift {
-    from { background-position: 0 0, 0 0; }
-    to   { background-position: 40px 40px, 40px 40px; }
-  }
-
-  .stage {
-    max-width: 1600px;
-    margin: 0 auto;
+  .mission-control {
     position: relative;
+    width: 100vw;
+    height: 100vh;
+    display: grid;
+    grid-template-rows: auto 1fr auto;
     z-index: 1;
   }
 
-  /* ============================================================
-     TOP METRIC BAR
-     ============================================================ */
-  .topbar {
+  /* ============ HEADER ============ */
+  .header {
     display: flex;
-    flex-wrap: wrap;
-    gap: 12px;
     align-items: center;
     justify-content: space-between;
-    padding: 14px 20px;
-    border: 1px solid var(--line);
-    border-radius: 14px;
-    background:
-      linear-gradient(180deg, rgba(15, 22, 38, 0.85), rgba(10, 15, 28, 0.85)),
-      rgba(10, 15, 28, 0.4);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.02), 0 8px 30px rgba(0,0,0,0.5);
-    margin-bottom: 18px;
+    padding: 10px 18px;
+    background: linear-gradient(180deg, rgba(0, 30, 60, 0.7), rgba(0, 15, 30, 0.4));
+    border-bottom: 1px solid var(--border);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
     position: relative;
     overflow: hidden;
+    gap: 10px;
+    flex-wrap: wrap;
   }
-
-  .topbar::before {
-    content: "";
+  .header::before {
+    content: '';
     position: absolute;
-    top: 0; left: -100%;
-    width: 60%;
-    height: 2px;
+    left: 0; right: 0;
+    height: 1px;
     background: linear-gradient(90deg, transparent, var(--neon-cyan), transparent);
-    animation: topScan 5s linear infinite;
+    animation: scan-h 4s linear infinite;
+  }
+  @keyframes scan-h {
+    0% { top: 0; opacity: 0; }
+    50% { opacity: 1; }
+    100% { top: 100%; opacity: 0; }
   }
 
-  @keyframes topScan {
-    0% { left: -60%; }
-    100% { left: 110%; }
-  }
-
-  .brand {
+  .header-title { display: flex; align-items: center; gap: 12px; }
+  .logo {
+    width: 38px; height: 38px;
+    position: relative;
     display: flex;
     align-items: center;
-    gap: 12px;
-  }
-
-  .brand-logo {
-    width: 38px;
-    height: 38px;
-    border-radius: 50%;
-    border: 1.5px solid var(--neon-cyan);
-    display: grid;
-    place-items: center;
-    box-shadow: var(--shadow-cyan);
-    background: radial-gradient(circle, rgba(0,255,209,0.18), transparent 70%);
-    position: relative;
-  }
-
-  .brand-logo::before, .brand-logo::after {
-    content: "";
-    position: absolute;
-    border-radius: 50%;
-    border: 1px solid var(--neon-cyan);
-    opacity: 0.4;
-    animation: pulseRing 2.4s ease-out infinite;
-  }
-  .brand-logo::before { inset: -6px; animation-delay: 0s; }
-  .brand-logo::after  { inset: -12px; animation-delay: 1.2s; }
-
-  @keyframes pulseRing {
-    0%   { transform: scale(0.9); opacity: 0.6; }
-    100% { transform: scale(1.6); opacity: 0; }
-  }
-
-  .brand-logo svg { width: 18px; height: 18px; }
-
-  .brand-text { line-height: 1.1; }
-  .brand-text .t1 {
-    font-size: 11px;
-    letter-spacing: 0.3em;
-    color: var(--neon-cyan);
-    text-transform: uppercase;
-  }
-  .brand-text .t2 {
-    font-size: 18px;
-    font-weight: 700;
-    letter-spacing: 0.06em;
-  }
-
-  .metrics {
-    display: flex;
-    gap: 12px;
-    flex-wrap: wrap;
-  }
-
-  .metric {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    padding: 8px 14px;
-    border: 1px solid var(--line);
-    border-radius: 10px;
-    background: rgba(15, 22, 38, 0.5);
-    min-width: 110px;
-    position: relative;
-    overflow: hidden;
-  }
-
-  .metric::before {
-    content: "";
-    position: absolute;
-    top: 0; left: -30%;
-    width: 30%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(0,255,209,0.06), transparent);
-    animation: metricShine 4s ease-in-out infinite;
-  }
-
-  @keyframes metricShine {
-    0%   { left: -30%; }
-    100% { left: 130%; }
-  }
-
-  .metric-label {
-    font-size: 9px;
-    letter-spacing: 0.25em;
-    color: var(--text-2);
-    text-transform: uppercase;
-  }
-
-  .metric-value {
-    font-family: 'Courier New', monospace;
-    font-size: 20px;
-    font-weight: 700;
-    color: var(--neon-cyan);
-    text-shadow: 0 0 8px rgba(0, 255, 209, 0.5);
-    line-height: 1;
-  }
-
-  .metric .pulse {
-    display: inline-block;
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: var(--neon-green);
-    margin-right: 6px;
-    vertical-align: middle;
-    box-shadow: 0 0 8px var(--neon-green);
-    animation: blink 1.6s ease-in-out infinite;
-  }
-
-  @keyframes blink {
-    0%, 100% { opacity: 1; }
-    50%      { opacity: 0.3; }
-  }
-
-  .system-mood {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 14px;
-    border: 1px solid var(--line);
-    border-radius: 10px;
-    background: rgba(15, 22, 38, 0.5);
-    font-size: 13px;
-  }
-
-  .mood-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: var(--neon-amber);
-    box-shadow: 0 0 10px var(--neon-amber);
-    animation: blink 1.2s ease-in-out infinite;
-  }
-
-  /* ============================================================
-     PIPELINE LAYOUT
-     ============================================================ */
-  .pipeline {
-    display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    gap: 14px;
-    position: relative;
-  }
-
-  .station {
-    position: relative;
-    border: 1px solid var(--line);
-    border-radius: 16px;
-    background:
-      linear-gradient(180deg, rgba(15, 22, 38, 0.85), rgba(8, 12, 22, 0.85));
-    padding: 16px 14px 14px;
-    min-height: 320px;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    transition: border-color 0.4s, box-shadow 0.4s;
-  }
-
-  .station::before {
-    /* scan line */
-    content: "";
-    position: absolute;
-    left: 0; right: 0; top: -50%;
-    height: 50%;
-    background: linear-gradient(180deg, rgba(0,255,209,0.05), transparent);
-    animation: scanDown 4s linear infinite;
-    pointer-events: none;
-  }
-
-  @keyframes scanDown {
-    0%   { top: -50%; }
-    100% { top: 110%; }
-  }
-
-  .station .station-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 10px;
-    position: relative;
-    z-index: 2;
-  }
-
-  .station-num {
-    width: 26px;
-    height: 26px;
+    justify-content: center;
     border-radius: 8px;
-    display: grid;
-    place-items: center;
-    font-family: 'Courier New', monospace;
-    font-weight: 700;
-    font-size: 13px;
-    border: 1px solid var(--line-strong);
-    color: var(--text-0);
+    background: radial-gradient(circle, rgba(0, 217, 255, 0.3), transparent);
+    border: 1px solid var(--neon-cyan);
+    box-shadow: 0 0 20px rgba(0, 217, 255, 0.4), inset 0 0 12px rgba(0, 217, 255, 0.2);
   }
-
-  .station-title {
-    flex: 1;
-    text-align: center;
-    font-size: 11px;
-    letter-spacing: 0.25em;
-    text-transform: uppercase;
-    color: var(--text-1);
-  }
-
-  .station-state-dot {
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    background: var(--text-2);
-    box-shadow: 0 0 6px var(--text-2);
-    transition: all 0.3s;
-  }
-
-  /* IDLE */
-  .station.state-idle { border-color: var(--line); }
-  .station.state-idle .station-state-dot { background: var(--text-2); box-shadow: 0 0 6px var(--text-2); }
-  .station.state-idle .station-num { color: var(--text-1); }
-
-  /* WORKING */
-  .station.state-working {
-    border-color: var(--neon-cyan);
-    box-shadow: 0 0 0 1px rgba(0,255,209,0.15), inset 0 0 30px rgba(0,255,209,0.05);
-    animation: workGlow 2.4s ease-in-out infinite;
-  }
-  .station.state-working .station-state-dot {
-    background: var(--neon-cyan);
-    box-shadow: 0 0 12px var(--neon-cyan), 0 0 24px var(--neon-cyan);
-    animation: blink 0.8s ease-in-out infinite;
-  }
-  .station.state-working .station-num {
+  .logo::before {
+    content: '◉';
+    font-size: 20px;
     color: var(--neon-cyan);
-    text-shadow: 0 0 8px var(--neon-cyan);
-    border-color: var(--neon-cyan);
+    animation: pulse-glow 2s ease-in-out infinite;
+    filter: drop-shadow(0 0 4px var(--neon-cyan));
   }
-
-  @keyframes workGlow {
-    0%, 100% { box-shadow: 0 0 0 1px rgba(0,255,209,0.18), inset 0 0 30px rgba(0,255,209,0.05); }
-    50%      { box-shadow: 0 0 0 2px rgba(0,255,209,0.35), inset 0 0 50px rgba(0,255,209,0.12); }
-  }
-
-  /* COMPLETE */
-  .station.state-complete {
-    border-color: var(--neon-green);
-    box-shadow: 0 0 0 1px rgba(93,255,143,0.25), inset 0 0 30px rgba(93,255,143,0.08);
-  }
-  .station.state-complete .station-state-dot {
-    background: var(--neon-green);
-    box-shadow: 0 0 14px var(--neon-green);
-  }
-  .station.state-complete .station-num {
-    color: var(--neon-green);
-    border-color: var(--neon-green);
-    text-shadow: 0 0 8px var(--neon-green);
-  }
-
-  /* Station-specific accent colors */
-  .station[data-color="cyan"]   { --accent: var(--neon-cyan);   --accent-shadow: var(--shadow-cyan); }
-  .station[data-color="purple"] { --accent: var(--neon-purple); --accent-shadow: var(--shadow-purple); }
-  .station[data-color="amber"]  { --accent: var(--neon-amber);  --accent-shadow: var(--shadow-amber); }
-  .station[data-color="blue"]   { --accent: var(--neon-blue);   --accent-shadow: var(--shadow-blue); }
-  .station[data-color="pink"]   { --accent: var(--neon-pink);   --accent-shadow: 0 0 18px rgba(255,95,184,0.55); }
-
-  /* Breathing idle effect */
-  .station.state-idle .station-num {
-    animation: breathe 3s ease-in-out infinite;
-  }
-  @keyframes breathe {
-    0%, 100% { opacity: 0.6; }
-    50%      { opacity: 1; }
-  }
-
-  /* ============================================================
-     STATION SCENE
-     ============================================================ */
-  .scene {
-    flex: 1;
-    position: relative;
-    border: 1px solid rgba(77, 210, 255, 0.10);
-    border-radius: 12px;
-    background:
-      linear-gradient(180deg, rgba(0,0,0,0.25), rgba(0,0,0,0.05)),
-      radial-gradient(ellipse at center bottom, rgba(77, 210, 255, 0.06), transparent 70%);
-    overflow: hidden;
-    margin-bottom: 10px;
-    min-height: 200px;
-  }
-
-  .scene-floor {
+  .logo::after {
+    content: '';
     position: absolute;
-    left: 0; right: 0; bottom: 0;
-    height: 30%;
-    background:
-      linear-gradient(180deg, transparent, rgba(0,255,209,0.04)),
-      repeating-linear-gradient(90deg, rgba(77, 210, 255, 0.18) 0 1px, transparent 1px 12px);
-    border-top: 1px solid rgba(0, 255, 209, 0.12);
-    transform: perspective(120px) rotateX(40deg);
-    transform-origin: bottom;
-    opacity: 0.5;
+    inset: -4px;
+    border-radius: 10px;
+    border: 1px solid rgba(0, 217, 255, 0.3);
+    animation: ring-spin 6s linear infinite;
+    border-top-color: var(--neon-cyan);
+    border-right-color: transparent;
+  }
+  @keyframes ring-spin { to { transform: rotate(360deg); } }
+  @keyframes pulse-glow {
+    0%, 100% { opacity: 0.6; transform: scale(0.95); }
+    50% { opacity: 1; transform: scale(1.05); }
   }
 
-  /* SVG characters and station props */
-  .scene svg.char, .scene svg.desk {
-    position: absolute;
-    bottom: 14%;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 3;
-  }
-
-  .scene .status-text {
-    position: absolute;
-    top: 8px;
-    left: 8px;
-    right: 8px;
-    font-family: 'Courier New', monospace;
-    font-size: 9px;
-    color: var(--text-2);
-    letter-spacing: 0.1em;
-    z-index: 5;
-    display: flex;
-    justify-content: space-between;
+  .title-text h1 {
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    color: var(--text-bright);
     text-transform: uppercase;
   }
+  .title-text .sub {
+    font-size: 10px;
+    color: var(--neon-cyan);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    opacity: 0.8;
+  }
 
-  .scene .status-text .v { color: var(--accent); }
+  .header-stats { display: flex; gap: 14px; flex-wrap: wrap; }
+  .stat-chip {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 4px 10px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: rgba(0, 217, 255, 0.04);
+    min-width: 70px;
+  }
+  .stat-chip .lbl {
+    font-size: 8px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+  }
+  .stat-chip .val {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-bright);
+    font-variant-numeric: tabular-nums;
+  }
+  .stat-chip.green .val { color: var(--neon-green); }
+  .stat-chip.cyan .val { color: var(--neon-cyan); }
+  .stat-chip.amber .val { color: var(--neon-amber); }
+  .stat-chip.pink .val { color: var(--neon-pink); }
 
-  /* particles layer */
-  .particles {
+  .header-actions { display: flex; gap: 8px; align-items: center; }
+
+  .clock {
+    font-size: 12px;
+    color: var(--neon-green);
+    font-variant-numeric: tabular-nums;
+    padding: 4px 10px;
+    border: 1px solid rgba(0, 255, 136, 0.3);
+    border-radius: 6px;
+    background: rgba(0, 255, 136, 0.05);
+    text-shadow: 0 0 8px rgba(0, 255, 136, 0.5);
+  }
+
+  .btn {
+    background: rgba(0, 217, 255, 0.1);
+    border: 1px solid var(--border-strong);
+    color: var(--neon-cyan);
+    padding: 7px 12px;
+    font-size: 10px;
+    font-family: inherit;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+  .btn:hover {
+    background: rgba(0, 217, 255, 0.2);
+    box-shadow: 0 0 16px rgba(0, 217, 255, 0.4);
+    transform: translateY(-1px);
+  }
+  .btn:active { transform: translateY(0); }
+  .btn.primary {
+    background: linear-gradient(135deg, rgba(0, 255, 136, 0.25), rgba(0, 217, 255, 0.25));
+    border-color: var(--neon-green);
+    color: var(--neon-green);
+    box-shadow: 0 0 12px rgba(0, 255, 136, 0.3);
+  }
+  .btn.primary:hover {
+    box-shadow: 0 0 20px rgba(0, 255, 136, 0.5);
+  }
+  .btn.alert {
+    background: rgba(255, 51, 85, 0.15);
+    border-color: var(--alert-red);
+    color: var(--alert-red);
+  }
+  .btn.alert:hover {
+    background: rgba(255, 51, 85, 0.3);
+    box-shadow: 0 0 16px rgba(255, 51, 85, 0.5);
+  }
+
+  /* ============ MAIN LAYOUT ============ */
+  .main {
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 12px;
+    padding: 12px;
+    overflow: hidden;
+    min-height: 0;
+  }
+
+  /* ============ OPERATIONS FLOOR ============ */
+  .floor-wrap {
+    position: relative;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    background: var(--bg-floor);
+    box-shadow: inset 0 0 80px rgba(0, 217, 255, 0.05), 0 0 30px rgba(0, 0, 0, 0.4);
+  }
+
+  .floor {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+  }
+
+  /* Grid background */
+  .floor::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(var(--grid-color) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid-color) 1px, transparent 1px),
+      linear-gradient(var(--grid-line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+    background-size: 30px 30px, 30px 30px, 150px 150px, 150px 150px;
+    animation: grid-pan 30s linear infinite;
+  }
+  @keyframes grid-pan {
+    to { background-position: 30px 30px, 30px 30px, 150px 150px, 150px 150px; }
+  }
+
+  /* Scanning sweep */
+  .radar-sweep {
     position: absolute;
     inset: 0;
     pointer-events: none;
     z-index: 4;
   }
-
-  .particle {
+  .radar-sweep::before {
+    content: '';
     position: absolute;
-    border-radius: 50%;
-    pointer-events: none;
-    will-change: transform, opacity;
+    top: 50%; left: 50%;
+    width: 200%;
+    height: 200%;
+    transform: translate(-50%, -50%);
+    background: conic-gradient(
+      from 0deg,
+      transparent 0deg,
+      rgba(0, 217, 255, 0.06) 30deg,
+      transparent 60deg,
+      transparent 360deg
+    );
+    animation: radar-spin 8s linear infinite;
   }
+  @keyframes radar-spin { to { transform: translate(-50%, -50%) rotate(360deg); } }
 
-  /* Typing dots */
-  .typing-dots {
+  /* Zones */
+  .zones {
     position: absolute;
-    top: 28px;
-    left: 50%;
-    transform: translateX(-50%);
-    display: flex;
-    gap: 4px;
-    z-index: 6;
-    opacity: 0;
-    transition: opacity 0.3s;
-  }
-  .station.state-working .typing-dots { opacity: 1; }
-  .typing-dots span {
-    width: 5px;
-    height: 5px;
-    border-radius: 50%;
-    background: var(--accent);
-    box-shadow: 0 0 6px var(--accent);
-    animation: typingBounce 1.2s ease-in-out infinite;
-  }
-  .typing-dots span:nth-child(2) { animation-delay: 0.15s; }
-  .typing-dots span:nth-child(3) { animation-delay: 0.30s; }
-
-  @keyframes typingBounce {
-    0%, 80%, 100% { transform: translateY(0); opacity: 0.5; }
-    40% { transform: translateY(-5px); opacity: 1; }
-  }
-
-  /* ============================================================
-     STATION FOOTER
-     ============================================================ */
-  .station-footer {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-    font-size: 10px;
-    letter-spacing: 0.1em;
-    color: var(--text-1);
-    text-transform: uppercase;
-    position: relative;
+    inset: 0;
     z-index: 2;
   }
-
-  .badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    padding: 3px 8px;
-    border-radius: 6px;
-    border: 1px solid var(--line);
-    font-family: 'Courier New', monospace;
+  .zone {
+    position: absolute;
+    border: 1px dashed rgba(0, 217, 255, 0.25);
+    border-radius: 12px;
+    background: rgba(0, 30, 60, 0.25);
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+    transition: all 0.3s;
+    cursor: pointer;
+  }
+  .zone::before {
+    content: attr(data-label);
+    position: absolute;
+    top: 6px; left: 8px;
     font-size: 9px;
-    color: var(--text-1);
-    background: rgba(15, 22, 38, 0.5);
-  }
-
-  .badge.idle    { color: var(--text-2); }
-  .badge.work    { color: var(--accent); border-color: var(--accent); box-shadow: 0 0 8px rgba(0,255,209,0.3); }
-  .badge.done    { color: var(--neon-green); border-color: var(--neon-green); }
-
-  /* progress bar */
-  .progress {
-    flex: 1;
-    height: 4px;
-    border-radius: 4px;
-    background: rgba(77, 210, 255, 0.08);
-    overflow: hidden;
-    position: relative;
-  }
-  .progress-fill {
-    position: absolute;
-    inset: 0;
-    width: 0%;
-    background: linear-gradient(90deg, var(--accent), var(--neon-cyan));
-    box-shadow: 0 0 8px var(--accent);
-    transition: width 0.5s ease;
-    border-radius: 4px;
-  }
-  .station.state-complete .progress-fill {
-    width: 100% !important;
-    background: var(--neon-green);
-  }
-
-  /* ============================================================
-     CONNECTORS (arrows between stations)
-     ============================================================ */
-  .connectors {
-    position: absolute;
-    inset: 0;
+    letter-spacing: 0.18em;
+    color: var(--neon-cyan);
+    text-transform: uppercase;
+    opacity: 0.7;
     pointer-events: none;
-    z-index: 0;
+  }
+  .zone:hover {
+    background: rgba(0, 217, 255, 0.06);
+    border-color: rgba(0, 217, 255, 0.5);
+    box-shadow: 0 0 30px rgba(0, 217, 255, 0.15);
   }
 
-  /* Connector is rendered via SVG overlay positioned absolutely on the pipeline */
-  .pipeline-wrap {
-    position: relative;
+  .zone-intake { top: 6%; left: 4%; width: 22%; height: 26%; border-color: rgba(0, 255, 136, 0.3); }
+  .zone-intake::before { color: var(--neon-green); }
+  .zone-router { top: 38%; left: 32%; width: 20%; height: 22%; }
+  .zone-processor-1 { top: 6%; left: 32%; width: 20%; height: 22%; border-color: rgba(178, 102, 255, 0.3); }
+  .zone-processor-1::before { color: var(--neon-purple); }
+  .zone-processor-2 { top: 6%; right: 4%; width: 22%; height: 22%; border-color: rgba(255, 46, 136, 0.3); }
+  .zone-processor-2::before { color: var(--neon-pink); }
+  .zone-processor-3 { top: 38%; right: 4%; width: 22%; height: 22%; border-color: rgba(255, 204, 0, 0.3); }
+  .zone-processor-3::before { color: var(--neon-amber); }
+  .zone-archive { bottom: 6%; right: 4%; width: 22%; height: 26%; border-color: rgba(0, 217, 255, 0.3); }
+  .zone-review { bottom: 6%; left: 32%; width: 20%; height: 26%; }
+  .zone-launch { bottom: 6%; left: 4%; width: 22%; height: 26%; border-color: rgba(0, 255, 136, 0.3); }
+  .zone-launch::before { color: var(--neon-green); }
+
+  /* Stations within zones */
+  .station {
+    position: absolute;
+    width: 56px; height: 56px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, rgba(0, 217, 255, 0.4), rgba(0, 50, 100, 0.3));
+    border: 2px solid var(--neon-cyan);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 0 16px rgba(0, 217, 255, 0.4), inset 0 0 12px rgba(0, 217, 255, 0.2);
+    z-index: 3;
+  }
+  .station:hover {
+    transform: scale(1.15);
+    box-shadow: 0 0 28px rgba(0, 217, 255, 0.7), inset 0 0 16px rgba(0, 217, 255, 0.4);
+  }
+  .station.busy {
+    border-color: var(--neon-amber);
+    box-shadow: 0 0 16px rgba(255, 204, 0, 0.5), inset 0 0 12px rgba(255, 204, 0, 0.3);
+    animation: busy-pulse 1.2s ease-in-out infinite;
+  }
+  @keyframes busy-pulse {
+    0%, 100% { box-shadow: 0 0 16px rgba(255, 204, 0, 0.5), inset 0 0 12px rgba(255, 204, 0, 0.3); }
+    50% { box-shadow: 0 0 28px rgba(255, 204, 0, 0.8), inset 0 0 16px rgba(255, 204, 0, 0.5); }
+  }
+  .station.idle {
+    border-color: var(--text-dim);
+    background: radial-gradient(circle at 30% 30%, rgba(90, 112, 144, 0.3), rgba(30, 40, 60, 0.3));
+    box-shadow: 0 0 8px rgba(90, 112, 144, 0.3);
+  }
+  .station.processing {
+    border-color: var(--neon-purple);
+    box-shadow: 0 0 16px rgba(178, 102, 255, 0.5), inset 0 0 12px rgba(178, 102, 255, 0.3);
+    animation: spin-process 3s linear infinite;
+  }
+  @keyframes spin-process { to { transform: rotate(360deg); } }
+  .station.online {
+    border-color: var(--neon-green);
+    box-shadow: 0 0 16px rgba(0, 255, 136, 0.5), inset 0 0 12px rgba(0, 255, 136, 0.3);
+  }
+  .station.away {
+    border-color: rgba(255, 51, 85, 0.6);
+    background: radial-gradient(circle at 30% 30%, rgba(255, 51, 85, 0.2), rgba(60, 20, 30, 0.3));
   }
 
-  .pipeline-svg {
+  .station::after {
+    content: '';
+    position: absolute;
+    bottom: -3px; right: -3px;
+    width: 12px; height: 12px;
+    border-radius: 50%;
+    border: 2px solid var(--bg-floor);
+  }
+  .station.online::after { background: var(--neon-green); box-shadow: 0 0 6px var(--neon-green); }
+  .station.busy::after { background: var(--neon-amber); box-shadow: 0 0 6px var(--neon-amber); }
+  .station.idle::after { background: var(--text-dim); }
+  .station.processing::after { background: var(--neon-purple); box-shadow: 0 0 6px var(--neon-purple); }
+  .station.away::after { background: var(--alert-red); }
+
+  .station .ring {
+    position: absolute;
+    inset: -8px;
+    border-radius: 50%;
+    border: 1px solid currentColor;
+    opacity: 0;
+    pointer-events: none;
+  }
+  .station.busy .ring {
+    opacity: 0.6;
+    animation: ring-out 1.5s ease-out infinite;
+  }
+  @keyframes ring-out {
+    0% { transform: scale(0.8); opacity: 0.7; }
+    100% { transform: scale(1.8); opacity: 0; }
+  }
+
+  /* Connecting paths */
+  .paths {
     position: absolute;
     inset: 0;
-    width: 100%;
-    height: 100%;
     pointer-events: none;
     z-index: 1;
   }
-
-  .pipeline-svg .conn-line {
-    stroke: var(--line);
-    stroke-width: 2;
-    stroke-dasharray: 4 6;
-    fill: none;
+  .path-line {
+    stroke-dasharray: 4 4;
+    animation: dash-flow 1s linear infinite;
+    opacity: 0.4;
+  }
+  @keyframes dash-flow {
+    to { stroke-dashoffset: -16; }
   }
 
-  .pipeline-svg .travel-dot {
-    fill: var(--neon-cyan);
-    filter: drop-shadow(0 0 4px var(--neon-cyan));
+  /* Task packets (drones) */
+  .packet {
+    position: absolute;
+    width: 14px; height: 14px;
+    transform: translate(-50%, -50%);
+    z-index: 5;
+    pointer-events: none;
+  }
+  .packet-inner {
+    width: 100%; height: 100%;
+    border-radius: 50%;
+    background: radial-gradient(circle, var(--neon-cyan), rgba(0, 217, 255, 0.3));
+    box-shadow: 0 0 12px var(--neon-cyan), 0 0 4px var(--neon-cyan);
+    position: relative;
+  }
+  .packet-inner::before {
+    content: '';
+    position: absolute;
+    inset: -6px;
+    border-radius: 50%;
+    border: 1px solid var(--neon-cyan);
+    opacity: 0.5;
+    animation: packet-pulse 0.8s ease-out infinite;
+  }
+  @keyframes packet-pulse {
+    0% { transform: scale(0.6); opacity: 0.8; }
+    100% { transform: scale(2); opacity: 0; }
+  }
+  .packet.urgent .packet-inner {
+    background: radial-gradient(circle, var(--neon-pink), rgba(255, 46, 136, 0.3));
+    box-shadow: 0 0 12px var(--neon-pink), 0 0 4px var(--neon-pink);
+  }
+  .packet.urgent .packet-inner::before { border-color: var(--neon-pink); }
+  .packet.priority .packet-inner {
+    background: radial-gradient(circle, var(--neon-amber), rgba(255, 204, 0, 0.3));
+    box-shadow: 0 0 12px var(--neon-amber), 0 0 4px var(--neon-amber);
+  }
+  .packet.priority .packet-inner::before { border-color: var(--neon-amber); }
+
+  .packet-trail {
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 2px; height: 2px;
+    background: var(--neon-cyan);
+    border-radius: 50%;
+    pointer-events: none;
+    box-shadow: 0 0 4px var(--neon-cyan);
+    z-index: 4;
+    opacity: 0.6;
   }
 
-  /* ============================================================
-     EVENT LOG
-     ============================================================ */
-  .event-log {
-    margin-top: 18px;
-    border: 1px solid var(--line);
-    border-radius: 14px;
-    background: rgba(10, 15, 28, 0.6);
-    padding: 14px 16px;
-    backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
+  /* ============ SIDE PANEL ============ */
+  .side-panel {
+    display: grid;
+    grid-template-rows: auto 1fr;
+    gap: 10px;
+    min-height: 0;
   }
 
-  .event-log h3 {
+  .panel {
+    background: linear-gradient(180deg, rgba(0, 20, 40, 0.7), rgba(0, 10, 25, 0.5));
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+
+  .panel-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 8px;
+  }
+  .panel-title h2 {
     font-size: 11px;
-    letter-spacing: 0.3em;
-    color: var(--neon-cyan);
     text-transform: uppercase;
-    margin-bottom: 10px;
+    letter-spacing: 0.15em;
+    color: var(--neon-cyan);
+  }
+  .panel-title .live-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--neon-green);
+    box-shadow: 0 0 8px var(--neon-green);
+    animation: pulse-glow 1.5s ease-in-out infinite;
+  }
+
+  /* Agent list */
+  .agent-list {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding-right: 4px;
+  }
+  .agent-list::-webkit-scrollbar { width: 4px; }
+  .agent-list::-webkit-scrollbar-track { background: rgba(0, 217, 255, 0.05); }
+  .agent-list::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 2px; }
+
+  .agent-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    border: 1px solid rgba(0, 217, 255, 0.1);
+    border-radius: 6px;
+    background: rgba(0, 30, 60, 0.3);
+    font-size: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .agent-row:hover {
+    background: rgba(0, 217, 255, 0.1);
+    border-color: var(--border-strong);
+    transform: translateX(2px);
+  }
+  .agent-avatar {
+    font-size: 18px;
+    width: 28px; height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: rgba(0, 217, 255, 0.1);
+    border: 1px solid var(--border);
+  }
+  .agent-info { flex: 1; min-width: 0; }
+  .agent-name { color: var(--text-bright); font-weight: 600; font-size: 11px; }
+  .agent-task {
+    color: var(--text-dim);
+    font-size: 9px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .agent-status {
+    font-size: 8px;
+    text-transform: uppercase;
+    padding: 2px 5px;
+    border-radius: 3px;
+    letter-spacing: 0.08em;
+    font-weight: 700;
+  }
+  .agent-status.online { background: rgba(0, 255, 136, 0.2); color: var(--neon-green); }
+  .agent-status.busy { background: rgba(255, 204, 0, 0.2); color: var(--neon-amber); }
+  .agent-status.idle { background: rgba(90, 112, 144, 0.3); color: var(--text-dim); }
+  .agent-status.away { background: rgba(255, 51, 85, 0.2); color: var(--alert-red); }
+
+  /* ============ FOOTER LOG ============ */
+  .footer-log {
+    padding: 0;
+    background: linear-gradient(180deg, rgba(0, 15, 30, 0.4), rgba(0, 30, 60, 0.7));
+    border-top: 1px solid var(--border);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    max-height: 180px;
+    display: flex;
+    flex-direction: column;
+  }
+  .log-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 18px;
+    border-bottom: 1px solid var(--border);
+    background: rgba(0, 217, 255, 0.04);
+  }
+  .log-header h2 {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--neon-cyan);
     display: flex;
     align-items: center;
     gap: 8px;
   }
-
-  .event-log h3 .dot {
-    width: 6px;
-    height: 6px;
+  .log-header .live-dot {
+    width: 7px; height: 7px;
     border-radius: 50%;
-    background: var(--neon-cyan);
-    box-shadow: 0 0 8px var(--neon-cyan);
-    animation: blink 1.2s ease-in-out infinite;
+    background: var(--neon-green);
+    box-shadow: 0 0 8px var(--neon-green);
+    animation: pulse-glow 1.5s ease-in-out infinite;
   }
+  .log-stream {
+    flex: 1;
+    overflow-y: auto;
+    padding: 6px 18px;
+    font-size: 10px;
+    line-height: 1.6;
+    font-family: inherit;
+  }
+  .log-stream::-webkit-scrollbar { width: 4px; }
+  .log-stream::-webkit-scrollbar-track { background: transparent; }
+  .log-stream::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 2px; }
 
-  .event-list {
-    font-family: 'Courier New', monospace;
-    font-size: 12px;
-    max-height: 140px;
-    overflow: hidden;
+  .log-entry {
     display: flex;
-    flex-direction: column;
-    gap: 3px;
-  }
-
-  .event-row {
-    display: grid;
-    grid-template-columns: 70px 90px 1fr;
     gap: 10px;
-    padding: 4px 8px;
-    border-left: 2px solid var(--neon-cyan);
-    background: linear-gradient(90deg, rgba(0,255,209,0.04), transparent);
-    color: var(--text-1);
-    animation: rowIn 0.4s ease;
-    opacity: 0.95;
+    padding: 2px 0;
+    animation: log-in 0.3s ease-out;
   }
-
-  .event-row .time { color: var(--text-2); }
-  .event-row .where { color: var(--neon-cyan); font-weight: 700; }
-  .event-row .msg { color: var(--text-0); }
-
-  @keyframes rowIn {
+  @keyframes log-in {
     from { opacity: 0; transform: translateX(-8px); }
-    to   { opacity: 0.95; transform: translateX(0); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+  .log-time {
+    color: var(--text-dim);
+    font-variant-numeric: tabular-nums;
+    flex-shrink: 0;
+  }
+  .log-tag {
+    font-size: 9px;
+    font-weight: 700;
+    padding: 1px 5px;
+    border-radius: 3px;
+    flex-shrink: 0;
+    text-transform: uppercase;
+  }
+  .log-tag.intake { background: rgba(0, 255, 136, 0.2); color: var(--neon-green); }
+  .log-tag.route { background: rgba(0, 217, 255, 0.2); color: var(--neon-cyan); }
+  .log-tag.process { background: rgba(178, 102, 255, 0.2); color: var(--neon-purple); }
+  .log-tag.archive { background: rgba(90, 112, 144, 0.3); color: var(--text-dim); }
+  .log-tag.review { background: rgba(255, 204, 0, 0.2); color: var(--neon-amber); }
+  .log-tag.launch { background: rgba(0, 255, 136, 0.2); color: var(--neon-green); }
+  .log-tag.error { background: rgba(255, 51, 85, 0.2); color: var(--alert-red); }
+  .log-msg { flex: 1; color: var(--text); }
+  .log-msg .ref { color: var(--neon-cyan); font-weight: 600; }
+
+  /* ============ TOOLTIP ============ */
+  .tooltip {
+    position: absolute;
+    background: linear-gradient(135deg, rgba(0, 20, 40, 0.95), rgba(0, 10, 25, 0.95));
+    border: 1px solid var(--neon-cyan);
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 10px;
+    color: var(--text);
+    pointer-events: none;
+    z-index: 100;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), 0 0 24px rgba(0, 217, 255, 0.3);
+    min-width: 200px;
+    max-width: 280px;
+    opacity: 0;
+    transform: translateY(4px);
+    transition: opacity 0.15s, transform 0.15s;
+  }
+  .tooltip.show {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  .tooltip-title {
+    color: var(--neon-cyan);
+    font-weight: 700;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .tooltip-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 2px 0;
+    border-bottom: 1px dashed rgba(0, 217, 255, 0.15);
+  }
+  .tooltip-row:last-child { border-bottom: none; }
+  .tooltip-row .lbl { color: var(--text-dim); }
+  .tooltip-row .val { color: var(--text-bright); font-weight: 600; }
+  .tooltip-section {
+    margin-top: 6px;
+    padding-top: 6px;
+    border-top: 1px solid var(--border);
+  }
+  .tooltip-section-title {
+    font-size: 9px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 4px;
+  }
+  .tooltip-task {
+    font-size: 9px;
+    padding: 2px 0;
+    color: var(--text);
+    display: flex;
+    justify-content: space-between;
+  }
+  .tooltip-task .tid { color: var(--neon-cyan); }
+
+  /* ============ MODE TOGGLE ============ */
+  body.day-mode {
+    --bg-deep: #e8eef5;
+    --bg-floor: #d4dde8;
+    --text: #2a3a4a;
+    --text-dim: #8090a0;
+    --text-bright: #0a1520;
+    --border: rgba(0, 100, 200, 0.2);
+    --border-strong: rgba(0, 100, 200, 0.4);
+  }
+  body.day-mode .floor::before {
+    background-image:
+      linear-gradient(rgba(0, 100, 200, 0.06) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0, 100, 200, 0.06) 1px, transparent 1px),
+      linear-gradient(rgba(0, 100, 200, 0.12) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0, 100, 200, 0.12) 1px, transparent 1px);
+  }
+  body.day-mode .header {
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(220, 230, 240, 0.7));
+  }
+  body.day-mode .panel,
+  body.day-mode .footer-log {
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(220, 230, 240, 0.7));
+  }
+  body.day-mode .stat-chip { background: rgba(0, 100, 200, 0.06); }
+  body.day-mode .btn { background: rgba(0, 100, 200, 0.1); border-color: rgba(0, 100, 200, 0.4); color: #0066cc; }
+  body.day-mode .agent-row { background: rgba(220, 230, 240, 0.6); border-color: rgba(0, 100, 200, 0.2); }
+  body.day-mode .zone { background: rgba(255, 255, 255, 0.4); }
+  body.day-mode body::before {
+    background:
+      radial-gradient(ellipse 60% 50% at 25% 20%, rgba(0, 80, 180, 0.08), transparent 60%),
+      radial-gradient(ellipse 50% 60% at 75% 80%, rgba(120, 0, 200, 0.06), transparent 60%);
   }
 
-  /* ============================================================
-     RESPONSIVE
-     ============================================================ */
-  @media (max-width: 1100px) {
-    .pipeline { grid-template-columns: repeat(3, 1fr); }
-    .station:nth-child(4), .station:nth-child(5) {
-      grid-column: span 1;
+  /* Emergency mode */
+  body.emergency {
+    --neon-cyan: #ff3355;
+    --neon-green: #ffcc00;
+  }
+  body.emergency .header {
+    background: linear-gradient(180deg, rgba(80, 0, 20, 0.7), rgba(40, 0, 10, 0.4));
+    border-bottom-color: var(--alert-red);
+    animation: alert-flash 1.5s ease-in-out infinite;
+  }
+  @keyframes alert-flash {
+    0%, 100% { box-shadow: 0 0 0 transparent; }
+    50% { box-shadow: inset 0 -2px 20px rgba(255, 51, 85, 0.5); }
+  }
+
+  /* ============ RESPONSIVE ============ */
+  @media (max-width: 900px) {
+    .main {
+      grid-template-columns: 1fr;
+      grid-template-rows: 1fr auto;
     }
+    .side-panel { grid-template-rows: auto; }
+    .agent-list { max-height: 130px; }
+    .header { padding: 8px 12px; }
+    .header-stats { gap: 8px; }
+    .stat-chip { min-width: 56px; padding: 3px 7px; }
+    .stat-chip .val { font-size: 11px; }
+    .title-text h1 { font-size: 12px; }
+    .title-text .sub { font-size: 8px; }
+    .footer-log { max-height: 140px; }
+    .btn { padding: 6px 10px; font-size: 9px; }
   }
 
-  @media (max-width: 720px) {
-    body { padding: 10px; }
-    .topbar { flex-direction: column; align-items: flex-start; }
-    .metrics { width: 100%; }
-    .metric { flex: 1; min-width: 90px; }
-    .pipeline { grid-template-columns: repeat(2, 1fr); }
+  @media (max-width: 600px) {
+    .header { flex-direction: column; align-items: stretch; }
+    .header-actions { justify-content: space-between; }
+    .footer-log .log-stream { font-size: 9px; }
+    .zone { font-size: 8px; }
+    .station { width: 44px; height: 44px; font-size: 18px; }
   }
 
-  @media (max-width: 480px) {
-    .pipeline { grid-template-columns: 1fr; }
-  }
-
-  /* prefers-reduced-motion */
+  /* Reduced motion */
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after {
-      animation-duration: 0.001ms !important;
+      animation-duration: 0.01ms !important;
       animation-iteration-count: 1 !important;
-      transition-duration: 0.001ms !important;
+      transition-duration: 0.01ms !important;
     }
-    .station.state-working {
-      box-shadow: 0 0 0 1px rgba(0,255,209,0.25), inset 0 0 20px rgba(0,255,209,0.06);
-    }
+    .radar-sweep::before,
+    .floor::before { display: none; }
   }
 </style>
 </head>
 <body>
+<div class="mission-control">
 
-<div class="stage">
+  <!-- HEADER -->
+  <header class="header">
+    <div class="header-title">
+      <div class="logo" aria-hidden="true"></div>
+      <div class="title-text">
+        <h1>Mission Control</h1>
+        <div class="sub">Live Agent Activity — Sector 7</div>
+      </div>
+    </div>
 
-  <!-- ======================== TOP METRIC BAR ======================== -->
-  <div class="topbar" role="banner" aria-label="Mission Control Status">
-    <div class="brand">
-      <div class="brand-logo" aria-hidden="true">
-        <!-- radar/eye icon -->
-        <svg viewBox="0 0 24 24" fill="none">
-          <circle cx="12" cy="12" r="9" stroke="#00ffd1" stroke-width="1.4"/>
-          <circle cx="12" cy="12" r="5" stroke="#00ffd1" stroke-width="1.2"/>
-          <circle cx="12" cy="12" r="1.6" fill="#00ffd1"/>
-          <path d="M12 3 L13.5 11 L12 12" stroke="#00ffd1" stroke-width="1.2" stroke-linecap="round"/>
+    <div class="header-stats" role="status" aria-live="polite">
+      <div class="stat-chip green"><span class="lbl">Tasks Done</span><span class="val" id="statTasks">142</span></div>
+      <div class="stat-chip cyan"><span class="lbl">Active</span><span class="val" id="statActive">5</span></div>
+      <div class="stat-chip amber"><span class="lbl">Queue</span><span class="val" id="statQueue">4</span></div>
+      <div class="stat-chip pink"><span class="lbl">Avg RT</span><span class="val" id="statRT">1.2s</span></div>
+    </div>
+
+    <div class="header-actions">
+      <span class="clock" id="clock">00:00:00</span>
+      <button class="btn" id="btnMode" aria-label="Toggle day or night shift">☾ Night</button>
+      <button class="btn alert" id="btnAlert" aria-label="Toggle emergency mode">⚠ Normal</button>
+      <button class="btn primary" id="btnSpawn" aria-label="Spawn a new task packet">+ New Task</button>
+    </div>
+  </header>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- OPERATIONS FLOOR -->
+    <div class="floor-wrap">
+      <div class="floor" id="floor">
+        <div class="radar-sweep" aria-hidden="true"></div>
+
+        <svg class="paths" viewBox="0 0 1000 600" preserveAspectRatio="none" aria-hidden="true">
+          <defs>
+            <linearGradient id="pathGrad" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stop-color="#00d9ff" stop-opacity="0.3"/>
+              <stop offset="100%" stop-color="#00d9ff" stop-opacity="0.1"/>
+            </linearGradient>
+          </defs>
+          <path class="path-line" d="M 150 130 Q 280 80, 380 110" stroke="url(#pathGrad)" stroke-width="2" fill="none"/>
+          <path class="path-line" d="M 460 130 Q 560 80, 700 110" stroke="url(#pathGrad)" stroke-width="2" fill="none"/>
+          <path class="path-line" d="M 460 200 Q 500 250, 540 240" stroke="url(#pathGrad)" stroke-width="2" fill="none"/>
+          <path class="path-line" d="M 540 240 Q 700 200, 800 130" stroke="url(#pathGrad)" stroke-width="2" fill="none"/>
+          <path class="path-line" d="M 800 200 Q 700 280, 540 320" stroke="url(#pathGrad)" stroke-width="2" fill="none"/>
+          <path class="path-line" d="M 540 320 Q 400 340, 380 380" stroke="url(#pathGrad)" stroke-width="2" fill="none"/>
+          <path class="path-line" d="M 380 380 Q 250 420, 150 460" stroke="url(#pathGrad)" stroke-width="2" fill="none"/>
+          <path class="path-line" d="M 540 320 Q 700 360, 800 460" stroke="url(#pathGrad)" stroke-width="2" fill="none"/>
         </svg>
+
+        <div class="zones">
+          <div class="zone zone-intake" data-label="◢ Intake" data-zone="intake"></div>
+          <div class="zone zone-router" data-label="◈ Router" data-zone="router"></div>
+          <div class="zone zone-processor-1" data-label="◇ Processor A" data-zone="procA"></div>
+          <div class="zone zone-processor-2" data-label="◇ Processor B" data-zone="procB"></div>
+          <div class="zone zone-processor-3" data-label="◇ Processor C" data-zone="procC"></div>
+          <div class="zone zone-archive" data-label="◣ Archive" data-zone="archive"></div>
+          <div class="zone zone-review" data-label="◉ Review" data-zone="review"></div>
+          <div class="zone zone-launch" data-label="▲ Launch" data-zone="launch"></div>
+        </div>
+
+        <!-- Stations -->
+        <button class="station online" style="top:14%;left:11%" data-station="intake-1" aria-label="Intake station 1">📥</button>
+        <button class="station online" style="top:18%;left:18%" data-station="intake-2" aria-label="Intake station 2">📨</button>
+
+        <button class="station processing" style="top:42%;left:38%" data-station="router-1" aria-label="Router station">🔀</button>
+
+        <button class="station busy" style="top:14%;left:38%" data-station="procA-1" aria-label="Processor A station 1">⚙️</button>
+        <button class="station online" style="top:18%;left:46%" data-station="procA-2" aria-label="Processor A station 2">⚙️</button>
+
+        <button class="station processing" style="top:14%;right:11%" data-station="procB-1" aria-label="Processor B station 1">🧠</button>
+        <button class="station busy" style="top:18%;right:18%" data-station="procB-2" aria-label="Processor B station 2">🧬</button>
+
+        <button class="station idle" style="top:42%;right:11%" data-station="procC-1" aria-label="Processor C station 1">📊</button>
+        <button class="station online" style="top:48%;right:18%" data-station="procC-2" aria-label="Processor C station 2">📈</button>
+
+        <button class="station online" style="bottom:14%;right:11%" data-station="archive-1" aria-label="Archive station">💾</button>
+        <button class="station idle" style="bottom:18%;right:18%" data-station="archive-2" aria-label="Archive station 2">🗄️</button>
+
+        <button class="station busy" style="bottom:14%;left:38%" data-station="review-1" aria-label="Review station">🔍</button>
+        <button class="station online" style="bottom:18%;left:46%" data-station="review-2" aria-label="Review station 2">📋</button>
+
+        <button class="station online" style="bottom:14%;left:11%" data-station="launch-1" aria-label="Launch station">🚀</button>
+        <button class="station processing" style="bottom:18%;left:18%" data-station="launch-2" aria-label="Launch station 2">🛰️</button>
+
+        <!-- Packet layer -->
+        <div id="packetLayer" style="position:absolute;inset:0;pointer-events:none;z-index:5;"></div>
       </div>
-      <div class="brand-text">
-        <div class="t1">// Hermes Mission Control</div>
-        <div class="t2">LIVE AGENT PIPELINE</div>
-      </div>
+
+      <!-- Tooltip -->
+      <div class="tooltip" id="tooltip" role="tooltip"></div>
     </div>
 
-    <div class="metrics" role="status" aria-live="polite">
-      <div class="metric">
-        <div class="metric-label"><span class="pulse"></span>Tasks Today</div>
-        <div class="metric-value" id="m-tasks">142</div>
-      </div>
-      <div class="metric">
-        <div class="metric-label">Active</div>
-        <div class="metric-value" id="m-active">5</div>
-      </div>
-      <div class="metric">
-        <div class="metric-label">Avg Latency</div>
-        <div class="metric-value" id="m-latency">1.20s</div>
-      </div>
-      <div class="metric">
-        <div class="metric-label">Throughput</div>
-        <div class="metric-value" id="m-throughput">98%</div>
-      </div>
+    <!-- SIDE PANEL -->
+    <aside class="side-panel">
+      <section class="panel">
+        <div class="panel-title">
+          <h2>👥 Agent Roster</h2>
+          <span class="live-dot" aria-hidden="true"></span>
+        </div>
+        <div class="agent-list" id="agentList" role="list"></div>
+      </section>
+    </aside>
+  </main>
+
+  <!-- FOOTER LOG -->
+  <footer class="footer-log">
+    <div class="log-header">
+      <h2><span class="live-dot" aria-hidden="true"></span>📡 Live Activity Stream</h2>
+      <span style="font-size:9px;color:var(--text-dim);letter-spacing:0.1em;">EVENTS: <span id="logCount">0</span></span>
     </div>
-
-    <div class="system-mood" aria-live="polite">
-      <span class="mood-dot" id="mood-dot"></span>
-      <span>System Mood:</span>
-      <strong id="m-mood" style="color: var(--neon-amber); margin-left: 4px;">Focused</strong>
-    </div>
-  </div>
-
-  <!-- ======================== PIPELINE ======================== -->
-  <div class="pipeline-wrap">
-    <svg class="pipeline-svg" id="pipeline-svg" aria-hidden="true"></svg>
-
-    <div class="pipeline" id="pipeline">
-
-      <!-- ===== STATION 1: INCOMING REQUEST ===== -->
-      <div class="station state-idle" data-color="cyan" data-id="incoming">
-        <div class="station-header">
-          <div class="station-num">01</div>
-          <div class="station-title">Incoming Request</div>
-          <div class="station-state-dot"></div>
-        </div>
-        <div class="scene" data-scene="incoming">
-          <div class="status-text">
-            <span>SOURCE</span><span class="v" data-role="src">— waiting —</span>
-          </div>
-          <div class="typing-dots"><span></span><span></span><span></span></div>
-          <div class="particles" data-particles></div>
-
-          <!-- Request envelope SVG -->
-          <svg class="char" viewBox="0 0 120 120" width="110" height="110" aria-hidden="true">
-            <!-- ambient glow ring -->
-            <defs>
-              <radialGradient id="g1" cx="50%" cy="60%" r="50%">
-                <stop offset="0%" stop-color="#00ffd1" stop-opacity="0.6"/>
-                <stop offset="100%" stop-color="#00ffd1" stop-opacity="0"/>
-              </radialGradient>
-            </defs>
-            <circle cx="60" cy="70" r="46" fill="url(#g1)" class="char-aura"/>
-            <!-- envelope -->
-            <g class="env" transform="translate(60 65)">
-              <rect x="-30" y="-18" width="60" height="38" rx="3"
-                    fill="#0f1626" stroke="#00ffd1" stroke-width="1.6"/>
-              <path d="M-30 -18 L0 5 L30 -18" stroke="#00ffd1" stroke-width="1.6" fill="none"/>
-              <!-- paper sticking out -->
-              <rect x="-22" y="-25" width="44" height="20" rx="1.5"
-                    fill="#1a2238" stroke="#4dd2ff" stroke-width="1"/>
-              <line x1="-16" y1="-19" x2="14" y2="-19" stroke="#4dd2ff" stroke-width="0.8" opacity="0.7"/>
-              <line x1="-16" y1="-15" x2="10" y2="-15" stroke="#4dd2ff" stroke-width="0.8" opacity="0.5"/>
-              <line x1="-16" y1="-11" x2="12" y2="-11" stroke="#4dd2ff" stroke-width="0.8" opacity="0.4"/>
-            </g>
-            <!-- notification ping -->
-            <circle cx="82" cy="42" r="6" fill="#ff5c7a" opacity="0">
-              <animate attributeName="r" values="4;10;4" dur="1.6s" repeatCount="indefinite"/>
-              <animate attributeName="opacity" values="1;0;1" dur="1.6s" repeatCount="indefinite"/>
-            </circle>
-          </svg>
-
-          <div class="scene-floor"></div>
-        </div>
-        <div class="station-footer">
-          <span class="badge idle" data-badge>IDLE</span>
-          <div class="progress"><div class="progress-fill" data-progress></div></div>
-          <span data-count style="font-family: 'Courier New', monospace; color: var(--text-2);">0</span>
-        </div>
-      </div>
-
-      <!-- ===== STATION 2: CEO DISPATCH ===== -->
-      <div class="station state-idle" data-color="purple" data-id="ceo">
-        <div class="station-header">
-          <div class="station-num">02</div>
-          <div class="station-title">CEO Dispatch</div>
-          <div class="station-state-dot"></div>
-        </div>
-        <div class="scene" data-scene="ceo">
-          <div class="status-text">
-            <span>DISPATCH</span><span class="v" data-role="src">— standby —</span>
-          </div>
-          <div class="typing-dots"><span></span><span></span><span></span></div>
-          <div class="particles" data-particles></div>
-
-          <!-- CEO at desk -->
-          <svg class="char" viewBox="0 0 120 120" width="120" height="120" aria-hidden="true">
-            <defs>
-              <radialGradient id="g2" cx="50%" cy="50%" r="50%">
-                <stop offset="0%" stop-color="#b16cff" stop-opacity="0.55"/>
-                <stop offset="100%" stop-color="#b16cff" stop-opacity="0"/>
-              </radialGradient>
-            </defs>
-            <circle cx="60" cy="55" r="42" fill="url(#g2)" class="char-aura"/>
-
-            <!-- desk -->
-            <rect x="10" y="78" width="100" height="6" rx="1.5" fill="#1a2238" stroke="#b16cff" stroke-width="0.8"/>
-
-            <!-- chair back -->
-            <rect x="50" y="40" width="20" height="34" rx="3" fill="#0f1626" stroke="#b16cff" stroke-width="1.2"/>
-
-            <!-- CEO body / suit -->
-            <g class="ceo-body">
-              <path d="M40 80 Q60 60 80 80 L80 96 L40 96 Z" fill="#1a2238" stroke="#b16cff" stroke-width="1.2"/>
-              <!-- tie -->
-              <path d="M58 64 L62 64 L63 78 L57 78 Z" fill="#ff5fb8"/>
-              <!-- head -->
-              <circle cx="60" cy="48" r="11" fill="#2a1f3a" stroke="#b16cff" stroke-width="1.2"/>
-              <!-- hair -->
-              <path d="M49 46 Q60 36 71 46" fill="none" stroke="#b16cff" stroke-width="1.4"/>
-              <!-- glasses -->
-              <circle cx="56" cy="49" r="2.5" fill="none" stroke="#00ffd1" stroke-width="1"/>
-              <circle cx="64" cy="49" r="2.5" fill="none" stroke="#00ffd1" stroke-width="1"/>
-              <line x1="58.5" y1="49" x2="61.5" y2="49" stroke="#00ffd1" stroke-width="0.8"/>
-              <!-- mouth -->
-              <path d="M56 54 Q60 56 64 54" stroke="#b16cff" stroke-width="1" fill="none"/>
-            </g>
-
-            <!-- arm pointing (assigning) -->
-            <g class="ceo-arm" transform-origin="40 70">
-              <path d="M40 70 L24 60" stroke="#2a1f3a" stroke-width="4" stroke-linecap="round"/>
-              <circle cx="24" cy="60" r="3" fill="#2a1f3a"/>
-            </g>
-
-            <!-- monitor -->
-            <rect x="76" y="58" width="28" height="20" rx="1.5" fill="#0a0f1c" stroke="#b16cff" stroke-width="1"/>
-            <rect x="78" y="60" width="24" height="16" fill="none" stroke="#00ffd1" stroke-width="0.6">
-              <animate attributeName="opacity" values="0.4;1;0.4" dur="1.8s" repeatCount="indefinite"/>
-            </rect>
-            <line x1="80" y1="64" x2="100" y2="64" stroke="#00ffd1" stroke-width="0.6"/>
-            <line x1="80" y1="68" x2="96" y2="68" stroke="#00ffd1" stroke-width="0.6"/>
-            <line x1="80" y1="72" x2="98" y2="72" stroke="#00ffd1" stroke-width="0.6"/>
-            <!-- stand -->
-            <rect x="88" y="78" width="4" height="3" fill="#b16cff"/>
-          </svg>
-
-          <div class="scene-floor"></div>
-        </div>
-        <div class="station-footer">
-          <span class="badge idle" data-badge>IDLE</span>
-          <div class="progress"><div class="progress-fill" data-progress></div></div>
-          <span data-count style="font-family: 'Courier New', monospace; color: var(--text-2);">0</span>
-        </div>
-      </div>
-
-      <!-- ===== STATION 3: WORKER / DELEGATE ===== -->
-      <div class="station state-idle" data-color="amber" data-id="worker">
-        <div class="station-header">
-          <div class="station-num">03</div>
-          <div class="station-title">Worker / Delegate</div>
-          <div class="station-state-dot"></div>
-        </div>
-        <div class="scene" data-scene="worker">
-          <div class="status-text">
-            <span>PROGRESS</span><span class="v" data-role="src">— waiting —</span>
-          </div>
-          <div class="typing-dots"><span></span><span></span><span></span></div>
-          <div class="particles" data-particles></div>
-
-          <!-- Worker with gears -->
-          <svg class="char" viewBox="0 0 120 120" width="120" height="120" aria-hidden="true">
-            <defs>
-              <radialGradient id="g3" cx="50%" cy="55%" r="50%">
-                <stop offset="0%" stop-color="#ffc857" stop-opacity="0.5"/>
-                <stop offset="100%" stop-color="#ffc857" stop-opacity="0"/>
-              </radialGradient>
-            </defs>
-            <circle cx="60" cy="55" r="42" fill="url(#g3)" class="char-aura"/>
-
-            <!-- big gear -->
-            <g class="big-gear" transform="translate(35 60)">
-              <g>
-                <circle cx="0" cy="0" r="14" fill="#0f1626" stroke="#ffc857" stroke-width="1.2"/>
-                <circle cx="0" cy="0" r="5" fill="#1a2238" stroke="#ffc857" stroke-width="1"/>
-                <!-- teeth -->
-                <g fill="#ffc857">
-                  <rect x="-2" y="-18" width="4" height="4"/>
-                  <rect x="-2" y="14" width="4" height="4"/>
-                  <rect x="-18" y="-2" width="4" height="4"/>
-                  <rect x="14" y="-2" width="4" height="4"/>
-                  <rect x="-15" y="-15" width="4" height="4" transform="rotate(45)"/>
-                  <rect x="-15" y="-15" width="4" height="4" transform="rotate(-45)"/>
-                  <rect x="11" y="-15" width="4" height="4" transform="rotate(-45)"/>
-                  <rect x="11" y="11" width="4" height="4" transform="rotate(45)"/>
-                </g>
-                <animateTransform attributeName="transform" type="rotate"
-                                  from="0" to="360" dur="6s" repeatCount="indefinite"/>
-              </g>
-            </g>
-
-            <!-- small gear -->
-            <g class="small-gear" transform="translate(82 80)">
-              <circle cx="0" cy="0" r="9" fill="#0f1626" stroke="#ffc857" stroke-width="1"/>
-              <circle cx="0" cy="0" r="3" fill="#1a2238" stroke="#ffc857" stroke-width="0.8"/>
-              <g fill="#ffc857">
-                <rect x="-1.5" y="-12" width="3" height="3"/>
-                <rect x="-1.5" y="9" width="3" height="3"/>
-                <rect x="-12" y="-1.5" width="3" height="3"/>
-                <rect x="9" y="-1.5" width="3" height="3"/>
-              </g>
-              <animateTransform attributeName="transform" type="rotate"
-                                from="360" to="0" dur="4s" repeatCount="indefinite"/>
-            </g>
-
-            <!-- worker head -->
-            <g class="worker-head">
-              <circle cx="60" cy="42" r="12" fill="#2a1f1a" stroke="#ffc857" stroke-width="1.2"/>
-              <!-- hardhat -->
-              <path d="M48 40 Q60 24 72 40 L72 36 Q60 28 48 36 Z" fill="#ffc857" stroke="#ff5c7a" stroke-width="0.8"/>
-              <rect x="46" y="38" width="28" height="3" fill="#ff5c7a"/>
-              <!-- face -->
-              <circle cx="56" cy="43" r="1.4" fill="#00ffd1"/>
-              <circle cx="64" cy="43" r="1.4" fill="#00ffd1"/>
-              <path d="M55 49 Q60 52 65 49" stroke="#ffc857" stroke-width="1" fill="none"/>
-            </g>
-            <!-- body -->
-            <path d="M44 88 Q60 70 76 88 L76 100 L44 100 Z" fill="#1a2238" stroke="#ffc857" stroke-width="1.2"/>
-            <!-- arms typing -->
-            <g class="worker-arms">
-              <path d="M44 78 L34 88" stroke="#2a1f1a" stroke-width="4" stroke-linecap="round"/>
-              <path d="M76 78 L86 88" stroke="#2a1f1a" stroke-width="4" stroke-linecap="round"/>
-            </g>
-
-            <!-- data stream -->
-            <g class="data-stream" opacity="0.8">
-              <text x="8" y="30" fill="#ffc857" font-size="6" font-family="monospace">
-                <tspan x="8" y="30">10110</tspan>
-                <animate attributeName="opacity" values="0;1;0" dur="1.6s" repeatCount="indefinite"/>
-              </text>
-              <text x="8" y="42" fill="#00ffd1" font-size="6" font-family="monospace">
-                <tspan x="8" y="42">01001</tspan>
-                <animate attributeName="opacity" values="0;1;0" dur="2.2s" begin="0.4s" repeatCount="indefinite"/>
-              </text>
-              <text x="8" y="54" fill="#b16cff" font-size="6" font-family="monospace">
-                <tspan x="8" y="54">11010</tspan>
-                <animate attributeName="opacity" values="0;1;0" dur="1.8s" begin="0.8s" repeatCount="indefinite"/>
-              </text>
-            </g>
-          </svg>
-
-          <div class="scene-floor"></div>
-        </div>
-        <div class="station-footer">
-          <span class="badge idle" data-badge>IDLE</span>
-          <div class="progress"><div class="progress-fill" data-progress></div></div>
-          <span data-count style="font-family: 'Courier New', monospace; color: var(--text-2);">0</span>
-        </div>
-      </div>
-
-      <!-- ===== STATION 4: OPS VERIFIES ===== -->
-      <div class="station state-idle" data-color="blue" data-id="ops">
-        <div class="station-header">
-          <div class="station-num">04</div>
-          <div class="station-title">Ops Verifies</div>
-          <div class="station-state-dot"></div>
-        </div>
-        <div class="scene" data-scene="ops">
-          <div class="status-text">
-            <span>CHECKLIST</span><span class="v" data-role="src">— pending —</span>
-          </div>
-          <div class="typing-dots"><span></span><span></span><span></span></div>
-          <div class="particles" data-particles></div>
-
-          <!-- Ops with clipboard -->
-          <svg class="char" viewBox="0 0 120 120" width="120" height="120" aria-hidden="true">
-            <defs>
-              <radialGradient id="g4" cx="50%" cy="55%" r="50%">
-                <stop offset="0%" stop-color="#4dd2ff" stop-opacity="0.55"/>
-                <stop offset="100%" stop-color="#4dd2ff" stop-opacity="0"/>
-              </radialGradient>
-            </defs>
-            <circle cx="60" cy="55" r="42" fill="url(#g4)" class="char-aura"/>
-
-            <!-- clipboard -->
-            <g transform="translate(60 65) rotate(-8)">
-              <rect x="-22" y="-32" width="44" height="58" rx="3" fill="#0f1626" stroke="#4dd2ff" stroke-width="1.2"/>
-              <rect x="-10" y="-36" width="20" height="8" rx="1.5" fill="#4dd2ff"/>
-              <!-- checklist lines -->
-              <g class="checklist">
-                <rect x="-16" y="-22" width="6" height="6" fill="none" stroke="#4dd2ff" stroke-width="1"/>
-                <path d="M-15 -19 L-13 -17 L-10 -22" stroke="#5dff8f" stroke-width="1.4" fill="none" stroke-linecap="round">
-                  <animate attributeName="stroke-dasharray" values="0,10;10,0" dur="2s" begin="0s" repeatCount="indefinite"/>
-                </path>
-                <line x1="-6" y1="-19" x2="14" y2="-19" stroke="#4dd2ff" stroke-width="0.8"/>
-
-                <rect x="-16" y="-12" width="6" height="6" fill="none" stroke="#4dd2ff" stroke-width="1"/>
-                <path d="M-15 -9 L-13 -7 L-10 -12" stroke="#5dff8f" stroke-width="1.4" fill="none" stroke-linecap="round">
-                  <animate attributeName="stroke-dasharray" values="0,10;10,0" dur="2s" begin="0.5s" repeatCount="indefinite"/>
-                </path>
-                <line x1="-6" y1="-9" x2="12" y2="-9" stroke="#4dd2ff" stroke-width="0.8"/>
-
-                <rect x="-16" y="-2" width="6" height="6" fill="none" stroke="#4dd2ff" stroke-width="1"/>
-                <path d="M-15 1 L-13 3 L-10 -2" stroke="#5dff8f" stroke-width="1.4" fill="none" stroke-linecap="round">
-                  <animate attributeName="stroke-dasharray" values="0,10;10,0" dur="2s" begin="1s" repeatCount="indefinite"/>
-                </path>
-                <line x1="-6" y1="1" x2="14" y2="1" stroke="#4dd2ff" stroke-width="0.8"/>
-
-                <rect x="-16" y="8" width="6" height="6" fill="none" stroke="#4dd2ff" stroke-width="1"/>
-                <path d="M-15 11 L-13 13 L-10 8" stroke="#5dff8f" stroke-width="1.4" fill="none" stroke-linecap="round">
-                  <animate attributeName="stroke-dasharray" values="0,10;10,0" dur="2s" begin="1.5s" repeatCount="indefinite"/>
-                </path>
-                <line x1="-6" y1="11" x2="10" y2="11" stroke="#4dd2ff" stroke-width="0.8"/>
-              </g>
-            </g>
-
-            <!-- ops person -->
-            <g class="ops-head">
-              <circle cx="60" cy="38" r="11" fill="#1a2a3a" stroke="#4dd2ff" stroke-width="1.2"/>
-              <!-- headset -->
-              <path d="M50 36 Q60 26 70 36" fill="none" stroke="#4dd2ff" stroke-width="1.6"/>
-              <rect x="48" y="34" width="4" height="6" rx="1" fill="#4dd2ff"/>
-              <rect x="68" y="34" width="4" height="6" rx="1" fill="#4dd2ff"/>
-              <!-- eyes -->
-              <circle cx="56" cy="39" r="1.4" fill="#00ffd1"/>
-              <circle cx="64" cy="39" r="1.4" fill="#00ffd1"/>
-              <!-- mouth -->
-              <path d="M56 44 Q60 46 64 44" stroke="#4dd2ff" stroke-width="1" fill="none"/>
-            </g>
-            <path d="M44 60 Q60 52 76 60 L76 70 L44 70 Z" fill="#1a2238" stroke="#4dd2ff" stroke-width="1.2"/>
-          </svg>
-
-          <div class="scene-floor"></div>
-        </div>
-        <div class="station-footer">
-          <span class="badge idle" data-badge>IDLE</span>
-          <div class="progress"><div class="progress-fill" data-progress></div></div>
-          <span data-count style="font-family: 'Courier New', monospace; color: var(--text-2);">0</span>
-        </div>
-      </div>
-
-      <!-- ===== STATION 5: GATEWAY REPORTS ===== -->
-      <div class="station state-idle" data-color="pink" data-id="gateway">
-        <div class="station-header">
-          <div class="station-num">05</div>
-          <div class="station-title">Gateway Reports</div>
-          <div class="station-state-dot"></div>
-        </div>
-        <div class="scene" data-scene="gateway">
-          <div class="status-text">
-            <span>EGRESS</span><span class="v" data-role="src">— closed —</span>
-          </div>
-          <div class="typing-dots"><span></span><span></span><span></span></div>
-          <div class="particles" data-particles></div>
-
-          <!-- Gateway with portal -->
-          <svg class="char" viewBox="0 0 120 120" width="120" height="120" aria-hidden="true">
-            <defs>
-              <radialGradient id="g5" cx="50%" cy="50%" r="55%">
-                <stop offset="0%" stop-color="#ff5fb8" stop-opacity="0.5"/>
-                <stop offset="100%" stop-color="#ff5fb8" stop-opacity="0"/>
-              </radialGradient>
-              <linearGradient id="portal" x1="0" x2="0" y1="0" y2="1">
-                <stop offset="0%" stop-color="#ff5fb8"/>
-                <stop offset="100%" stop-color="#4dd2ff"/>
-              </linearGradient>
-            </defs>
-            <circle cx="60" cy="55" r="44" fill="url(#g5)" class="char-aura"/>
-
-            <!-- portal rings -->
-            <g class="portal-rings">
-              <ellipse cx="60" cy="60" rx="32" ry="38" fill="none" stroke="#ff5fb8" stroke-width="1.4" opacity="0.7">
-                <animate attributeName="rx" values="32;36;32" dur="2.4s" repeatCount="indefinite"/>
-                <animate attributeName="ry" values="38;34;38" dur="2.4s" repeatCount="indefinite"/>
-              </ellipse>
-              <ellipse cx="60" cy="60" rx="26" ry="32" fill="none" stroke="#4dd2ff" stroke-width="1" opacity="0.6">
-                <animate attributeName="rx" values="26;30;26" dur="2.4s" begin="0.4s" repeatCount="indefinite"/>
-                <animate attributeName="ry" values="32;28;32" dur="2.4s" begin="0.4s" repeatCount="indefinite"/>
-              </ellipse>
-              <ellipse cx="60" cy="60" rx="20" ry="26" fill="url(#portal)" opacity="0.4"/>
-            </g>
-
-            <!-- central energy core -->
-            <circle cx="60" cy="60" r="8" fill="#0a0f1c" stroke="#00ffd1" stroke-width="1.4">
-              <animate attributeName="r" values="6;9;6" dur="1.6s" repeatCount="indefinite"/>
-            </circle>
-            <circle cx="60" cy="60" r="3" fill="#00ffd1">
-              <animate attributeName="opacity" values="0.4;1;0.4" dur="1s" repeatCount="indefinite"/>
-            </circle>
-
-            <!-- outgoing packets -->
-            <g class="packets">
-              <circle cx="20" cy="40" r="2" fill="#ff5fb8">
-                <animate attributeName="cx" values="20;100;100" dur="2.5s" repeatCount="indefinite"/>
-                <animate attributeName="opacity" values="0;1;0" dur="2.5s" repeatCount="indefinite"/>
-              </circle>
-              <circle cx="20" cy="60" r="2" fill="#4dd2ff">
-                <animate attributeName="cx" values="20;100;100" dur="2.5s" begin="0.7s" repeatCount="indefinite"/>
-                <animate attributeName="opacity" values="0;1;0" dur="2.5s" begin="0.7s" repeatCount="indefinite"/>
-              </circle>
-              <circle cx="20" cy="80" r="2" fill="#5dff8f">
-                <animate attributeName="cx" values="20;100;100" dur="2.5s" begin="1.4s" repeatCount="indefinite"/>
-                <animate attributeName="opacity" values="0;1;0" dur="2.5s" begin="1.4s" repeatCount="indefinite"/>
-              </circle>
-            </g>
-
-            <!-- stand -->
-            <rect x="56" y="92" width="8" height="6" fill="#1a2238" stroke="#ff5fb8" stroke-width="0.8"/>
-            <rect x="40" y="98" width="40" height="3" rx="1" fill="#1a2238" stroke="#ff5fb8" stroke-width="0.8"/>
-
-            <!-- status: complete check -->
-            <g class="complete-mark" opacity="0">
-              <circle cx="92" cy="30" r="9" fill="#5dff8f" stroke="#0a0f1c" stroke-width="1.5"/>
-              <path d="M88 30 L91 33 L96 27" stroke="#0a0f1c" stroke-width="2" fill="none" stroke-linecap="round"/>
-              <animate attributeName="opacity" values="0;0;0" dur="3s" repeatCount="indefinite"/>
-            </g>
-          </svg>
-
-          <div class="scene-floor"></div>
-        </div>
-        <div class="station-footer">
-          <span class="badge idle" data-badge>IDLE</span>
-          <div class="progress"><div class="progress-fill" data-progress></div></div>
-          <span data-count style="font-family: 'Courier New', monospace; color: var(--text-2);">0</span>
-        </div>
-      </div>
-
-    </div>
-  </div>
-
-  <!-- ======================== EVENT LOG ======================== -->
-  <div class="event-log" role="log" aria-live="polite" aria-label="Pipeline event log">
-    <h3><span class="dot"></span> Live Event Stream</h3>
-    <div class="event-list" id="event-list"></div>
-  </div>
-
+    <div class="log-stream" id="logStream" aria-live="polite"></div>
+  </footer>
 </div>
 
 <script>
-(function () {
+(() => {
   'use strict';
 
-  /* ============================================================
-     STATE
-     ============================================================ */
-  const STATIONS = ['incoming', 'ceo', 'worker', 'ops', 'gateway'];
-  const STATION_LABELS = {
-    incoming: 'INCOMING',
-    ceo:      'CEO',
-    worker:   'WORKER',
-    ops:      'OPS',
-    gateway:  'GATEWAY'
-  };
-
+  // ============ STATE ============
   const state = {
     tasksProcessed: 142,
     activeTasks: 5,
-    avgLatency: 1.20,
-    throughput: 98,
-    mood: 'Focused',
-    activeTask: null,   // current task flowing through the pipeline
-    taskStage: 0,       // 0..4 = which station it just completed (0 means before station 1)
-    tasksCompleted: 0,
-    taskStartTime: 0
+    queueLength: 4,
+    avgResponseTime: 1.2,
+    systemMood: 'Focused',
+    dayMode: false,
+    emergency: false,
+    packets: [],
+    agents: [],
+    eventCount: 0,
   };
 
-  const MOODS = ['Focused', 'Busy', 'Calm', 'Energized', 'Processing'];
-  const MOOD_COLORS = {
-    Focused: '#ffc857',
-    Busy: '#ff5c7a',
-    Calm: '#4dd2ff',
-    Energized: '#5dff8f',
-    Processing: '#b16cff'
+  const moods = ['Focused', 'Busy', 'Calm', 'Energized', 'Processing', 'Heated', 'Steady', 'Alert'];
+  const agentNames = ['Nova', 'Echo', 'Pulse', 'Cipher', 'Atlas', 'Lyra', 'Orion', 'Vega', 'Zenith', 'Quark', 'Astra', 'Helix'];
+  const agentEmojis = ['🧑‍🚀', '👾', '🤖', '👨‍💻', '🦾', '🧑‍🔬', '🦿', '🧞', '🧚', '🥷', '🦊', '🐉'];
+  const agentSpecialties = ['Routing', 'Analysis', 'Translation', 'Synthesis', 'Validation', 'Computation', 'Inspection', 'Dispatch'];
+  const taskTypes = ['ANALYZE', 'TRANSLATE', 'VALIDATE', 'AGGREGATE', 'TRANSFORM', 'COMPUTE', 'VERIFY', 'REROUTE'];
+  const intakeMessages = [
+    'New request from sector {N}',
+    'Incoming: batch #{N}',
+    'Packet {N} arrived via uplink',
+    'Inbound query #{N}',
+    'Webhook {N} triggered',
+    'Stream {N} opened',
+    'Task {N} submitted by user',
+  ];
+  const processMsgs = [
+    'Running heuristics on payload',
+    'Tokenizing input stream',
+    'Computing vector embeddings',
+    'Cross-referencing {N} sources',
+    'Validating schema structure',
+    'Aggregating results',
+    'Applying transformation rules',
+  ];
+  const archiveMsgs = [
+    'Archived to cold storage',
+    'Snapshot saved #{N}',
+    'Indexed in vault',
+    'Committed to history',
+  ];
+  const reviewMsgs = [
+    'Quality check passed',
+    'Awaiting sign-off',
+    'Reviewing output',
+    'Flagged for attention',
+  ];
+  const launchMsgs = [
+    'Deployed to production',
+    'Released to client',
+    'Broadcast complete',
+    'Pushed to network',
+  ];
+  const errorMsgs = [
+    'Timeout — retrying',
+    'Rate limit approached',
+    'Checksum mismatch',
+    'Backpressure detected',
+  ];
+
+  // ============ DOM HELPERS ============
+  const $ = (id) => document.getElementById(id);
+  const floor = $('floor');
+  const packetLayer = $('packetLayer');
+  const tooltip = $('tooltip');
+  const logStream = $('logStream');
+  const agentList = $('agentList');
+
+  // ============ STATIONS / ZONES COORDS ============
+  // Coordinates are in % of floor; we map packets by interpolation.
+  const nodePositions = {
+    intake: { x: 14, y: 20 },
+    router: { x: 42, y: 47 },
+    procA: { x: 42, y: 20 },
+    procB: { x: 85, y: 20 },
+    procC: { x: 85, y: 48 },
+    archive: { x: 85, y: 80 },
+    review: { x: 42, y: 80 },
+    launch: { x: 14, y: 80 },
   };
 
-  const SOURCES = [
-    'API-WEB', 'EMAIL-Q', 'SLACK-7', 'CRON-12', 'USER-A', 'WEBHOOK', 'TRIGGER-X', 'TICKET-99'
-  ];
-  const TASKS = [
-    'Summarize report',
-    'Translate doc',
-    'Patch security',
-    'Render preview',
-    'Sync CRM',
-    'Send digest',
-    'Audit logs',
-    'Process refund',
-    'Onboard user',
-    'Schedule task'
+  const routes = [
+    ['intake', 'router', 'procA'],
+    ['intake', 'router', 'procB'],
+    ['intake', 'router', 'procC'],
+    ['procA', 'review'],
+    ['procB', 'review'],
+    ['procC', 'review'],
+    ['review', 'archive'],
+    ['review', 'launch'],
+    ['procA', 'archive'],
+    ['procB', 'launch'],
   ];
 
-  /* ============================================================
-     METRICS UI
-     ============================================================ */
-  const $mTasks = document.getElementById('m-tasks');
-  const $mActive = document.getElementById('m-active');
-  const $mLatency = document.getElementById('m-latency');
-  const $mThroughput = document.getElementById('m-throughput');
-  const $mMood = document.getElementById('m-mood');
-  const $moodDot = document.getElementById('mood-dot');
-
-  function renderMetrics() {
-    $mTasks.textContent = state.tasksProcessed;
-    $mActive.textContent = state.activeTasks;
-    $mLatency.textContent = state.avgLatency.toFixed(2) + 's';
-    $mThroughput.textContent = state.throughput + '%';
-    $mMood.textContent = state.mood;
-    $mMood.style.color = MOOD_COLORS[state.mood];
-    $moodDot.style.background = MOOD_COLORS[state.mood];
-    $moodDot.style.boxShadow = `0 0 10px ${MOOD_COLORS[state.mood]}`;
+  // ============ CLOCK ============
+  function updateClock() {
+    const d = new Date();
+    const hh = String(d.getHours()).padStart(2, '0');
+    const mm = String(d.getMinutes()).padStart(2, '0');
+    const ss = String(d.getSeconds()).padStart(2, '0');
+    $('clock').textContent = `${hh}:${mm}:${ss}`;
   }
 
-  /* ============================================================
-     PIPELINE SVG (connectors + traveling dots)
-     ============================================================ */
-  const pipelineEl = document.getElementById('pipeline');
-  const pipelineSvg = document.getElementById('pipeline-svg');
+  // ============ AGENTS ============
+  const statuses = ['online', 'online', 'online', 'busy', 'busy', 'idle', 'away'];
 
-  function buildConnectors() {
-    pipelineSvg.innerHTML = '';
-    const stationEls = Array.from(pipelineEl.querySelectorAll('.station'));
-    if (stationEls.length < 2) return;
-    const wrap = pipelineEl.getBoundingClientRect();
-    pipelineSvg.setAttribute('viewBox', `0 0 ${wrap.width} ${wrap.height}`);
-    pipelineSvg.setAttribute('preserveAspectRatio', 'none');
-
-    // connectors between adjacent stations (4 connectors for 5 stations)
-    for (let i = 0; i < stationEls.length - 1; i++) {
-      const a = stationEls[i].getBoundingClientRect();
-      const b = stationEls[i+1].getBoundingClientRect();
-      const ax = a.right - wrap.left;
-      const ay = a.top + a.height * 0.5 - wrap.top;
-      const bx = b.left - wrap.left;
-      const by = b.top + b.height * 0.5 - wrap.top;
-
-      // base dashed line
-      const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-      line.setAttribute('x1', ax);
-      line.setAttribute('y1', ay);
-      line.setAttribute('x2', bx);
-      line.setAttribute('y2', by);
-      line.setAttribute('class', 'conn-line');
-      pipelineSvg.appendChild(line);
-
-      // arrowhead
-      const arrow = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
-      const ang = Math.atan2(by - ay, bx - ax);
-      const tipX = bx - 4 * Math.cos(ang);
-      const tipY = by - 4 * Math.sin(ang);
-      const leftX = tipX - 9 * Math.cos(ang - 0.5);
-      const leftY = tipY - 9 * Math.sin(ang - 0.5);
-      const rightX = tipX - 9 * Math.cos(ang + 0.5);
-      const rightY = tipY - 9 * Math.sin(ang + 0.5);
-      arrow.setAttribute('points', `${tipX},${tipY} ${leftX},${leftY} ${rightX},${rightY}`);
-      arrow.setAttribute('fill', 'rgba(0,255,209,0.55)');
-      pipelineSvg.appendChild(arrow);
-
-      // traveling dots
-      for (let k = 0; k < 3; k++) {
-        const dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-        dot.setAttribute('r', '2.5');
-        dot.setAttribute('class', 'travel-dot');
-        // animateMotion via SVG
-        const motion = document.createElementNS('http://www.w3.org/2000/svg', 'animateMotion');
-        motion.setAttribute('dur', (2.4 + k * 0.4) + 's');
-        motion.setAttribute('repeatCount', 'indefinite');
-        motion.setAttribute('begin', (k * 0.8) + 's');
-        const path = document.createElementNS('http://www.w3.org/2000/svg', 'mpath');
-        // create path for motion
-        const motionPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-        motionPath.setAttribute('d', `M ${ax} ${ay} L ${bx} ${by}`);
-        motionPath.setAttribute('id', `mp-${i}-${k}`);
-        motionPath.setAttribute('fill', 'none');
-        motionPath.setAttribute('stroke', 'none');
-        pipelineSvg.appendChild(motionPath);
-        path.setAttribute('href', `#mp-${i}-${k}`);
-        motion.appendChild(path);
-        dot.appendChild(motion);
-        pipelineSvg.appendChild(dot);
-      }
-    }
-  }
-
-  let resizeTimer = null;
-  window.addEventListener('resize', () => {
-    clearTimeout(resizeTimer);
-    resizeTimer = setTimeout(buildConnectors, 150);
-  });
-
-  /* ============================================================
-     STATION STATE UI
-     ============================================================ */
-  const stationEls = {};
-  STATIONS.forEach(id => {
-    stationEls[id] = pipelineEl.querySelector(`.station[data-id="${id}"]`);
-  });
-
-  function setStationState(id, st, fillProgress = null) {
-    const el = stationEls[id];
-    if (!el) return;
-    el.classList.remove('state-idle', 'state-working', 'state-complete');
-    el.classList.add('state-' + st);
-    const badge = el.querySelector('[data-badge]');
-    badge.classList.remove('idle', 'work', 'done');
-    if (st === 'idle')    { badge.classList.add('idle'); badge.textContent = 'IDLE'; }
-    if (st === 'working') { badge.classList.add('work');  badge.textContent = 'WORKING'; }
-    if (st === 'complete'){ badge.classList.add('done');  badge.textContent = 'COMPLETE'; }
-
-    const progress = el.querySelector('[data-progress]');
-    if (progress && fillProgress !== null) {
-      progress.style.width = Math.min(100, Math.max(0, fillProgress)) + '%';
-    }
-  }
-
-  function setStationStatus(id, role, text) {
-    const el = stationEls[id];
-    if (!el) return;
-    const r = el.querySelector(`[data-role="${role}"]`);
-    if (r) r.textContent = text;
-  }
-
-  function spawnParticles(id, color) {
-    const el = stationEls[id];
-    if (!el) return;
-    const layer = el.querySelector('[data-particles]');
-    if (!layer) return;
-    const W = layer.clientWidth || 200;
-    const H = layer.clientHeight || 200;
-    const count = 6;
+  function initAgents() {
+    const count = 3 + Math.floor(Math.random() * 4); // 3-6
+    state.agents = [];
     for (let i = 0; i < count; i++) {
-      const p = document.createElement('div');
-      p.className = 'particle';
-      const size = 2 + Math.random() * 3;
-      const x = Math.random() * W;
-      const y = H - 6;
-      p.style.width = size + 'px';
-      p.style.height = size + 'px';
-      p.style.left = x + 'px';
-      p.style.top = y + 'px';
-      p.style.background = color;
-      p.style.boxShadow = `0 0 ${size * 2}px ${color}`;
-      const dur = 1.2 + Math.random() * 1.6;
-      const dx = (Math.random() - 0.5) * 30;
-      p.animate([
-        { transform: `translate(0, 0) scale(1)`, opacity: 0 },
-        { transform: `translate(${dx * 0.5}px, ${-H * 0.5}px) scale(1)`, opacity: 1, offset: 0.2 },
-        { transform: `translate(${dx}px, ${-H + 10}px) scale(0.4)`, opacity: 0 }
-      ], { duration: dur * 1000, easing: 'cubic-bezier(.2,.8,.4,1)' });
-      setTimeout(() => p.remove(), dur * 1000 + 50);
-      layer.appendChild(p);
+      state.agents.push({
+        id: 'A' + (1000 + Math.floor(Math.random() * 9000)),
+        name: agentNames[i],
+        emoji: agentEmojis[i],
+        specialty: agentSpecialties[i % agentSpecialties.length],
+        status: statuses[Math.floor(Math.random() * statuses.length)],
+        currentTask: null,
+        completedToday: Math.floor(Math.random() * 30) + 10,
+        avgRT: (0.8 + Math.random() * 0.8).toFixed(2),
+      });
     }
+    renderAgents();
   }
 
-  /* ============================================================
-     EVENT LOG
-     ============================================================ */
-  const $eventList = document.getElementById('event-list');
-  function log(where, msg) {
-    const now = new Date();
-    const hh = String(now.getHours()).padStart(2, '0');
-    const mm = String(now.getMinutes()).padStart(2, '0');
-    const ss = String(now.getSeconds()).padStart(2, '0');
-    const row = document.createElement('div');
-    row.className = 'event-row';
-    row.innerHTML = `<span class="time">${hh}:${mm}:${ss}</span><span class="where">${where}</span><span class="msg">${msg}</span>`;
-    $eventList.insertBefore(row, $eventList.firstChild);
-    while ($eventList.children.length > 8) $eventList.removeChild($eventList.lastChild);
+  function renderAgents() {
+    agentList.innerHTML = state.agents.map(a => `
+      <div class="agent-row" data-agent="${a.id}" role="listitem" tabindex="0" aria-label="Agent ${a.name}, ${a.status}">
+        <div class="agent-avatar">${a.emoji}</div>
+        <div class="agent-info">
+          <div class="agent-name">${a.name} <span style="color:var(--text-dim);font-weight:400;font-size:9px;">· ${a.id}</span></div>
+          <div class="agent-task">${a.currentTask ? '⟶ ' + a.currentTask : a.specialty}</div>
+        </div>
+        <span class="agent-status ${a.status}">${a.status}</span>
+      </div>
+    `).join('');
+
+    // Bind events
+    agentList.querySelectorAll('.agent-row').forEach(row => {
+      const id = row.dataset.agent;
+      const showAgent = (e) => showAgentTooltip(e, id);
+      row.addEventListener('mouseenter', showAgent);
+      row.addEventListener('mouseleave', hideTooltip);
+      row.addEventListener('click', showAgent);
+      row.addEventListener('focus', showAgent);
+    });
   }
 
-  /* ============================================================
-     PIPELINE TASK FLOW
-     A task enters station 1, then progresses to 2, 3, 4, 5.
-     At each station it sits "working" for a moment, then "complete".
-     We track by index in STATIONS.
-     ============================================================ */
-  let currentTaskId = null;
-
-  function startNewTask() {
-    if (currentTaskId) return;
-    currentTaskId = 'T' + Math.floor(Math.random() * 9000 + 1000);
-    const taskName = TASKS[Math.floor(Math.random() * TASKS.length)];
-    const source = SOURCES[Math.floor(Math.random() * SOURCES.length)];
-    state.taskStage = 0;
-    state.tasksCompleted = 0;
-    state.taskStartTime = Date.now();
-
-    // reset all stations to idle
-    STATIONS.forEach(id => setStationState(id, 'idle', 0));
-
-    // configure incoming
-    setStationStatus('incoming', 'src', source + ' / ' + currentTaskId);
-    log('INCOMING', `${source} → task ${currentTaskId} (${taskName})`);
-
-    // begin station 1
-    processStation(0);
-  }
-
-  function processStation(idx) {
-    const id = STATIONS[idx];
-    const colors = {
-      incoming: '#00ffd1',
-      ceo:      '#b16cff',
-      worker:   '#ffc857',
-      ops:      '#4dd2ff',
-      gateway:  '#ff5fb8'
-    };
-
-    // mark current station working
-    setStationState(id, 'working', 5);
-    setStationStatus(id, 'src', `${currentTaskId} / processing`);
-    spawnParticles(id, colors[id]);
-    log(STATION_LABELS[id], `task ${currentTaskId} received`);
-
-    // animate progress over working duration
-    const dur = 900 + Math.random() * 900;  // ms
-    const start = Date.now();
-    const tick = setInterval(() => {
-      const t = Math.min(1, (Date.now() - start) / dur);
-      setStationState(id, 'working', 5 + t * 90);
-      if (t >= 1) {
-        clearInterval(tick);
-        completeStation(idx);
+  function updateAgentStatuses() {
+    state.agents.forEach(a => {
+      // Probabilistic state changes
+      const r = Math.random();
+      if (r < 0.15) {
+        const newStatuses = ['online', 'busy', 'idle', 'away'];
+        const newStatus = newStatuses[Math.floor(Math.random() * newStatuses.length)];
+        if (newStatus !== a.status) {
+          a.status = newStatus;
+          if (newStatus === 'busy' && !a.currentTask) {
+            a.currentTask = 'Task #' + (state.tasksProcessed + Math.floor(Math.random() * 5) + 1);
+          } else if (newStatus !== 'busy') {
+            a.currentTask = null;
+          }
+        }
       }
-    }, 60);
+      if (a.status === 'busy' && Math.random() < 0.3) {
+        a.completedToday++;
+      }
+    });
+    renderAgents();
   }
 
-  function completeStation(idx) {
-    const id = STATIONS[idx];
-    setStationState(id, 'complete', 100);
-    setStationStatus(id, 'src', `${currentTaskId} ✓ done`);
-    // increment counter
-    const countEl = stationEls[id].querySelector('[data-count]');
-    const cur = parseInt(countEl.textContent, 10) || 0;
-    countEl.textContent = cur + 1;
-    log(STATION_LABELS[id], `task ${currentTaskId} cleared ✓`);
-
-    // bump metrics
-    state.tasksProcessed += (id === 'gateway' ? 1 : 0);
-    state.avgLatency = Math.max(0.7, Math.min(2.4, state.avgLatency + (Math.random() - 0.5) * 0.1));
-    state.activeTasks = Math.max(2, Math.min(9, state.activeTasks + (Math.random() < 0.5 ? -1 : 1)));
-
-    // advance
-    state.taskStage = idx + 1;
-    if (idx + 1 < STATIONS.length) {
-      setTimeout(() => processStation(idx + 1), 350);
-    } else {
-      // pipeline done — reset all and start another
-      setTimeout(() => {
-        log('GATEWAY', `task ${currentTaskId} delivered. Pipeline reset.`);
-        currentTaskId = null;
-        state.tasksProcessed += 1;
-        renderMetrics();
-        // brief idle pause, then restart
-        STATIONS.forEach(s => setStationState(s, 'idle', 0));
-        setTimeout(startNewTask, 800 + Math.random() * 1200);
-      }, 600);
-    }
+  function showAgentTooltip(e, id) {
+    const a = state.agents.find(x => x.id === id);
+    if (!a) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const wrapRect = floor.parentElement.getBoundingClientRect();
+    tooltip.innerHTML = `
+      <div class="tooltip-title">${a.emoji} ${a.name} <span style="color:var(--text-dim);font-weight:400;">· ${a.id}</span></div>
+      <div class="tooltip-row"><span class="lbl">Specialty</span><span class="val">${a.specialty}</span></div>
+      <div class="tooltip-row"><span class="lbl">Status</span><span class="val" style="color:var(--neon-${a.status === 'busy' ? 'amber' : a.status === 'online' ? 'green' : a.status === 'away' ? 'pink' : 'cyan'})">${a.status.toUpperCase()}</span></div>
+      <div class="tooltip-row"><span class="lbl">Completed</span><span class="val">${a.completedToday}</span></div>
+      <div class="tooltip-row"><span class="lbl">Avg Response</span><span class="val">${a.avgRT}s</span></div>
+      ${a.currentTask ? `<div class="tooltip-section"><div class="tooltip-section-title">Current Task</div><div class="tooltip-task"><span class="tid">${a.currentTask}</span><span style="color:var(--neon-amber);">●</span></div></div>` : ''}
+    `;
+    tooltip.classList.add('show');
+    const tw = tooltip.offsetWidth;
+    let left = rect.left - wrapRect.left + rect.width + 8;
+    if (left + tw > wrapRect.width) left = rect.left - wrapRect.left - tw - 8;
+    tooltip.style.left = left + 'px';
+    tooltip.style.top = (rect.top - wrapRect.top) + 'px';
   }
 
-  /* ============================================================
-     METRICS TICK (every 3 seconds)
-     ============================================================ */
-  function metricsTick() {
-    state.tasksProcessed += Math.floor(Math.random() * 3);
-    state.throughput = Math.max(85, Math.min(100, state.throughput + Math.floor((Math.random() - 0.4) * 3)));
-    if (Math.random() < 0.35) {
-      state.mood = MOODS[Math.floor(Math.random() * MOODS.length)];
-    }
-    state.avgLatency = Math.max(0.7, Math.min(2.4, state.avgLatency + (Math.random() - 0.5) * 0.15));
-    renderMetrics();
-  }
+  // ============ STATION TOOLTIPS ============
+  const stationInfo = {
+    'intake-1': { name: 'Intake Station α', tasks: 24, rt: '0.4s' },
+    'intake-2': { name: 'Intake Station β', tasks: 19, rt: '0.5s' },
+    'router-1': { name: 'Smart Router', tasks: 87, rt: '0.2s' },
+    'procA-1': { name: 'Processor A — Analysis', tasks: 56, rt: '1.8s' },
+    'procA-2': { name: 'Processor A — Compute', tasks: 42, rt: '2.1s' },
+    'procB-1': { name: 'Processor B — Synthesis', tasks: 38, rt: '1.4s' },
+    'procB-2': { name: 'Processor B — Transform', tasks: 31, rt: '1.6s' },
+    'procC-1': { name: 'Processor C — Aggregation', tasks: 28, rt: '1.1s' },
+    'procC-2': { name: 'Processor C — Validation', tasks: 33, rt: '0.9s' },
+    'archive-1': { name: 'Cold Archive', tasks: 198, rt: '0.3s' },
+    'archive-2': { name: 'Hot Cache', tasks: 76, rt: '0.1s' },
+    'review-1': { name: 'Quality Review', tasks: 45, rt: '2.4s' },
+    'review-2': { name: 'Approval Queue', tasks: 22, rt: '1.9s' },
+    'launch-1': { name: 'Launch Pad', tasks: 67, rt: '0.6s' },
+    'launch-2': name: 'Broadcast Tower', tasks: 41, rt: '0.5s' },
+  };
 
-  /* ============================================================
-     REDUCED MOTION
-     ============================================================ */
-  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-  /* ============================================================
-     INIT
-     ============================================================ */
-  function init() {
-    buildConnectors();
-    renderMetrics();
-
-    // pre-seed counters
-    Object.values(stationEls).forEach(el => {
-      const c = el.querySelector('[data-count]');
-      if (c) c.textContent = Math.floor(Math.random() * 6 + 2);
+  function bindStations() {
+    document.querySelectorAll('.station').forEach(st => {
+      const id = st.dataset.station;
+      const info = stationInfo[id] || { name: id, tasks: 0, rt: '—' };
+      const show = (e) => {
+        const rect = st.getBoundingClientRect();
+        const wrapRect = floor.parentElement.getBoundingClientRect();
+        tooltip.innerHTML = `
+          <div class="tooltip-title">${st.textContent.trim()} ${info.name}</div>
+          <div class="tooltip-row"><span class="lbl">Status</span><span class="val" style="color:var(--neon-${st.classList.contains('busy') ? 'amber' : st.classList.contains('processing') ? 'purple' : st.classList.contains('idle') ? 'dim' : st.classList.contains('away') ? 'pink' : 'green'})">${Array.from(st.classList).find(c => ['online','busy','idle','processing','away'].includes(c)) || 'online'}</span></div>
+          <div class="tooltip-row"><span class="lbl">Tasks Today</span><span class="val">${info.tasks}</span></div>
+          <div class="tooltip-row"><span class="lbl">Avg Response</span><span class="val">${info.rt}</span></div>
+          <div class="tooltip-section"><div class="tooltip-section-title">Click to focus</div><div class="tooltip-task" style="color:var(--text-dim);">Drill into station details</div></div>
+        `;
+        tooltip.classList.add('show');
+        const tw = tooltip.offsetWidth;
+        let left = rect.left - wrapRect.left + rect.width / 2 - tw / 2;
+        left = Math.max(8, Math.min(left, wrapRect.width - tw - 8));
+        let top = rect.top - wrapRect.top - tooltip.offsetHeight - 8;
+        if (top < 8) top = rect.bottom - wrapRect.top + 8;
+        tooltip.style.left = left + 'px';
+        tooltip.style.top = top + 'px';
+      };
+      st.addEventListener('mouseenter', show);
+      st.addEventListener('mouseleave', hideTooltip);
+      st.addEventListener('click', show);
+      st.addEventListener('focus', show);
     });
 
-    log('SYSTEM', 'Mission Control online — pipeline primed');
-
-    // kick off pipeline
-    startNewTask();
-
-    // metrics loop
-    setInterval(metricsTick, 3000);
-
-    // occasionally re-log ambient status
-    setInterval(() => {
-      const id = STATIONS[Math.floor(Math.random() * STATIONS.length)];
-      const msgs = [
-        'heartbeat nominal',
-        'queue steady',
-        'agents synced',
-        'channels healthy',
-        'latency within SLA'
-      ];
-      log(STATION_LABELS[id], msgs[Math.floor(Math.random() * msgs.length)]);
-    }, 5000);
+    document.querySelectorAll('.zone').forEach(z => {
+      const name = z.dataset.label;
+      const show = (e) => {
+        const rect = z.getBoundingClientRect();
+        const wrapRect = floor.parentElement.getBoundingClientRect();
+        tooltip.innerHTML = `
+          <div class="tooltip-title">${name}</div>
+          <div class="tooltip-row"><span class="lbl">Zone Type</span><span class="val">${z.dataset.zone}</span></div>
+          <div class="tooltip-row"><span class="lbl">Stations</span><span class="val">2</span></div>
+          <div class="tooltip-row"><span class="lbl">Throughput</span><span class="val">${Math.floor(Math.random()*50+20)}/min</span></div>
+        `;
+        tooltip.classList.add('show');
+        const tw = tooltip.offsetWidth;
+        let left = rect.left - wrapRect.left + rect.width / 2 - tw / 2;
+        left = Math.max(8, Math.min(left, wrapRect.width - tw - 8));
+        tooltip.style.left = left + 'px';
+        tooltip.style.top = (rect.bottom - wrapRect.top + 6) + 'px';
+      };
+      z.addEventListener('mouseenter', show);
+      z.addEventListener('mouseleave', hideTooltip);
+    });
   }
 
-  // wait for fonts/layout
+  function hideTooltip() {
+    tooltip.classList.remove('show');
+  }
+
+  // ============ PACKETS ============
+  function spawnPacket(opts = {}) {
+    const urgent = opts.urgent || Math.random() < 0.18;
+    const priority = !urgent && Math.random() < 0.3;
+    const packet = document.createElement('div');
+    packet.className = 'packet' + (urgent ? ' urgent' : priority ? ' priority' : '');
+    packet.innerHTML = '<div class="packet-inner"></div>';
+    packetLayer.appendChild(packet);
+
+    const taskId = 'T' + (state.tasksProcessed + Math.floor(Math.random() * 100) + 1);
+    const route = routes[Math.floor(Math.random() * routes.length)];
+    const p = {
+      el: packet,
+      taskId,
+      route,
+      idx: 0,
+      progress: 0,
+      speed: 0.005 + Math.random() * 0.008,
+      urgent,
+    };
+
+    movePacket(p);
+    state.packets.push(p);
+    addLog(intakeMessages[Math.floor(Math.random()*intakeMessages.length)].replace('{N}', taskId), 'intake', taskId);
+
+    if (state.agents.some(a => a.status === 'idle')) {
+      const idle = state.agents.find(a => a.status === 'idle');
+      idle.status = 'busy';
+      idle.currentTask = taskId;
+    }
+  }
+
+  function movePacket(p) {
+    const from = nodePositions[p.route[p.idx]];
+    const to = nodePositions[p.route[p.idx + 1]];
+    if (!from || !to) return finishPacket(p);
+
+    const x = from.x + (to.x - from.x) * p.progress;
+    const y = from.y + (to.y - from.y) * p.progress;
+    p.el.style.left = x + '%';
+    p.el.style.top = y + '%';
+
+    p.progress += p.speed;
+    if (p.progress >= 1) {
+      p.progress = 0;
+      p.idx++;
+      onArriveAtNode(p, p.route[p.idx - 1], p.route[p.idx]);
+    }
+    requestAnimationFrame(() => movePacket(p));
+  }
+
+  function onArriveAtNode(p, from, to) {
+    const msgFor = {
+      router: ['Routing to ' + (to === 'procA' ? 'Processor A' : to === 'procB' ? 'Processor B' : 'Processor C')],
+      procA: [processMsgs[Math.floor(Math.random()*processMsgs.length)].replace('{N}', '4')],
+      procB: [processMsgs[Math.floor(Math.random()*processMsgs.length)].replace('{N}', '3')],
+      procC: [processMsgs[Math.floor(Math.random()*processMsgs.length)].replace('{N}', '5')],
+      review: [reviewMsgs[Math.floor(Math.random()*reviewMsgs.length)]],
+      archive: [archiveMsgs[Math.floor(Math.random()*archiveMsgs.length)].replace('{N}', p.taskId)],
+      launch: [launchMsgs[Math.floor(Math.random()*launchMsgs.length)]],
+    };
+    const tagFor = {
+      router: 'route', procA: 'process', procB: 'process', procC: 'process',
+      review: 'review', archive: 'archive', launch: 'launch',
+    };
+    const msgs = msgFor[to] || ['Processing'];
+    if (msgs) addLog(msgs[Math.floor(Math.random()*msgs.length)], tagFor[to] || 'process', p.taskId);
+  }
+
+  function finishPacket(p) {
+    p.el.style.opacity = '0';
+    p.el.style.transform = 'translate(-50%, -50%) scale(2)';
+    p.el.style.transition = 'all 0.4s';
+    setTimeout(() => p.el.remove(), 400);
+    state.packets = state.packets.filter(x => x !== p);
+    state.tasksProcessed++;
+    state.activeTasks = Math.max(1, state.activeTasks - 1 + (Math.random() < 0.3 ? 1 : 0));
+  }
+
+  // ============ LOG ============
+  function addLog(msg, tag, ref) {
+    const d = new Date();
+    const time = `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}:${String(d.getSeconds()).padStart(2,'0')}`;
+    const entry = document.createElement('div');
+    entry.className = 'log-entry';
+    entry.innerHTML = `
+      <span class="log-time">${time}</span>
+      <span class="log-tag ${tag}">${tag}</span>
+      <span class="log-msg">${msg}${ref ? ' <span class="ref">[' + ref + ']</span>' : ''}</span>
+    `;
+    logStream.insertBefore(entry, logStream.firstChild);
+    state.eventCount++;
+    $('logCount').textContent = state.eventCount;
+    while (logStream.children.length > 80) logStream.removeChild(logStream.lastChild);
+  }
+
+  // ============ STATS UPDATER ============
+  function updateStats() {
+    if (Math.random() < 0.7) state.tasksProcessed += Math.floor(Math.random() * 3);
+    state.activeTasks = Math.max(2, Math.min(8, state.activeTasks + (Math.random() < 0.5 ? -1 : 1)));
+    state.queueLength = Math.max(0, Math.min(12, state.queueLength + (Math.random() < 0.5 ? -1 : 1)));
+    state.avgResponseTime = Math.max(0.6, Math.min(3.5, state.avgResponseTime + (Math.random() - 0.5) * 0.2));
+    if (Math.random() < 0.2) state.systemMood = moods[Math.floor(Math.random() * moods.length)];
+
+    $('statTasks').textContent = state.tasksProcessed;
+    $('statActive').textContent = state.activeTasks;
+    $('statQueue').textContent = state.queueLength;
+    $('statRT').textContent = state.avgResponseTime.toFixed(1) + 's';
+  }
+
+  // ============ AMBIENT ACTIVITY ============
+  function ambientTick() {
+    if (Math.random() < 0.6) spawnPacket();
+    if (Math.random() < 0.3) {
+      const tags = ['route', 'process', 'archive', 'review', 'launch'];
+      const tag = tags[Math.floor(Math.random()*tags.length)];
+      const allMsgs = { route: processMsgs, process: processMsgs, archive: archiveMsgs, review: reviewMsgs, launch: launchMsgs };
+      const pool = allMsgs[tag] || processMsgs;
+      addLog(pool[Math.floor(Math.random()*pool.length)].replace('{N}', Math.floor(Math.random()*999)), tag);
+    }
+    if (Math.random() < 0.05) addLog(errorMsgs[Math.floor(Math.random()*errorMsgs.length)], 'error');
+  }
+
+  // ============ MODE TOGGLES ============
+  $('btnMode').addEventListener('click', () => {
+    state.dayMode = !state.dayMode;
+    document.body.classList.toggle('day-mode', state.dayMode);
+    $('btnMode').textContent = state.dayMode ? '☀ Day' : '☾ Night';
+    addLog(state.dayMode ? 'Shift changed: Day mode active' : 'Shift changed: Night mode active', 'route');
+  });
+
+  $('btnAlert').addEventListener('click', () => {
+    state.emergency = !state.emergency;
+    document.body.classList.toggle('emergency', state.emergency);
+    $('btnAlert').textContent = state.emergency ? '🚨 Emergency' : '⚠ Normal';
+    addLog(state.emergency ? '⚠ EMERGENCY PROTOCOL ENGAGED' : '✓ Emergency protocol lifted', state.emergency ? 'error' : 'route');
+  });
+
+  $('btnSpawn').addEventListener('click', () => {
+    spawnPacket({ urgent: true });
+  });
+
+  // ============ STATION CLASSES UPDATE ============
+  function refreshStationStates() {
+    const stations = document.querySelectorAll('.station');
+    stations.forEach(s => {
+      // Sometimes toggle the state class for visual variety
+      if (Math.random() < 0.15) {
+        const states = ['online', 'busy', 'idle', 'processing'];
+        const newState = states[Math.floor(Math.random() * states.length)];
+        s.classList.remove('online', 'busy', 'idle', 'processing', 'away');
+        s.classList.add(newState);
+      }
+    });
+  }
+
+  // ============ STARTUP ============
+  function init() {
+    initAgents();
+    bindStations();
+    updateClock();
+    setInterval(updateClock, 1000);
+    setInterval(updateStats, 1500);
+    setInterval(updateAgentStatuses, 2500);
+    setInterval(ambientTick, 2200);
+    setInterval(refreshStationStates, 3500);
+
+    // Seed log
+    addLog('Mission Control online — Sector 7 nominal', 'route');
+    addLog('All stations reporting green', 'launch');
+
+    // Initial packets
+    setTimeout(() => spawnPacket(), 400);
+    setTimeout(() => spawnPacket(), 900);
+    setTimeout(() => spawnPacket(), 1500);
+
+    // Hide tooltip on any click outside
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.station') && !e.target.closest('.zone') && !e.target.closest('.agent-row')) {
+        hideTooltip();
+      }
+    });
+
+    // Resize handler — keep packet positions relative (they use %)
+  }
+
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
   } else {
@@ -1542,6 +1393,5 @@
   }
 })();
 </script>
-
 </body>
 </html>
