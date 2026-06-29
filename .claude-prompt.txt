@@ -1,0 +1,45 @@
+You are in a SANDBOX PREVIEW directory. You have FULL creative freedom.
+
+Create a SINGLE standalone HTML file named index.html in this directory.
+It must be completely self-contained — ALL CSS and JS inline, NO external dependencies, NO CDN links.
+
+THEME: "Live Agent Activity — Mission Control Operations Pipeline"
+Build a fun, animated 2D operations office / mission-control pipeline showing:
+
+PIPELINE FLOW (5 stations, left to right or top to bottom):
+1. INCOMING REQUEST — a task/request arrives (animated entry, glowing pulse)
+2. CEO DISPATCH — CEO receives and dispatches the task (busy/assigning animation)
+3. WORKER / DELEGATE PROCESS — worker or delegate processes with animated work indicators (typing, gears, data streams)
+4. OPS VERIFIES — operations/checklist verification phase (checking, approving)
+5. GATEWAY REPORTS — final report/export with connection to external systems
+
+VISUAL REQUIREMENTS:
+- Mission-control / operations room aesthetic: dark background, neon/cyber accents, grid lines, glowing elements
+- Each station should be a distinct "desk" or "console" with a character (inline SVG or emoji) and status indicators
+- Animated flow between stations: pulsing dots, glowing arrows, particle trails showing task progression
+- Each station has 3 states: IDLE (dim, breathing), WORKING (animated glow, activity), COMPLETE (pulse green, checkmark)
+- Animated particle effects, data streams, or energy flows — pure CSS/JS, no external assets
+- Pipeline arrows/lines connecting stations with glowing traveling dots
+- Animated counter/metric at the top showing total tasks processed today
+
+FUN ENGAGING ELEMENTS:
+- SVG or emoji characters at each station with subtle animations (typing hands, bobbing heads, spinning gears)
+- Desk items: monitor with glow, papers, coffee cup with steam, etc.
+- Status badges with animated text
+- Make it feel like a living operations center — pulsing, flowing, reacting
+
+DATA (use mock data that updates every 3 seconds with slight variations):
+- tasksProcessed: starts ~142, increments randomly
+- activeTasks: 3-7 random
+- avgResponseTime: ~1.2s with variation
+- systemMood: random from ['Focused', 'Busy', 'Calm', 'Energized', 'Processing']
+
+RESPONSIVE:
+- Desktop: horizontal pipeline with stations in a row
+- Tablet: 2-3 column grid
+- Mobile: stacked vertically
+
+ACCESSIBILITY:
+- respects prefers-reduced-motion
+
+OUTPUT: Write the complete index.html file. Make it impressive. This is a creative sandbox — go wild within the bounds of a single self-contained HTML file.
